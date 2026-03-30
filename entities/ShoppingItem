@@ -1,0 +1,46 @@
+{
+  "name": "ShoppingItem",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Item"
+    },
+    "price": {
+      "type": "number",
+      "title": "Pre\u00e7o unit\u00e1rio"
+    },
+    "quantity": {
+      "type": "number",
+      "title": "Quantidade"
+    },
+    "unit": {
+      "type": "string",
+      "title": "Unidade",
+      "enum": [
+        "unidade",
+        "kg",
+        "g",
+        "litro",
+        "ml",
+        "pacote",
+        "caixa",
+        "d\u00fazia",
+        "outro"
+      ]
+    },
+    "checked": {
+      "type": "boolean",
+      "title": "Pego"
+    },
+    "list_name": {
+      "type": "string",
+      "title": "Nome da lista"
+    }
+  },
+  "required": [
+    "name",
+    "quantity",
+    "unit"
+  ]
+}

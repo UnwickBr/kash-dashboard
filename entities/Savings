@@ -1,0 +1,34 @@
+{
+  "name": "Savings",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome"
+    },
+    "amount": {
+      "type": "number",
+      "title": "Valor guardado"
+    },
+    "goal_amount": {
+      "type": "number",
+      "title": "Meta (opcional)"
+    },
+    "monthly_deposit": {
+      "type": "number",
+      "title": "Dep\u00f3sito mensal"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o"
+    },
+    "icon": {
+      "type": "string",
+      "title": "\u00cdcone"
+    }
+  },
+  "required": [
+    "name",
+    "amount"
+  ]
+}

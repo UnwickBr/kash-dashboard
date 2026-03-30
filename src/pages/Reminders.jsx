@@ -1,0 +1,267 @@
+import { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Bell, Trash2, Check, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { format, differenceInDays } from "date-fns";
+
+const categories = ["Moradia", "Cartão de crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
+
+const emptyForm = { description: "", amount: "", due_date: "", category: "Outros", recurrent: false };
+
+export default function Reminders() {
+  const { currentUser } = useAuth();
+  const [reminders, setReminders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+
+  const load = async () => {
+    if (!currentUser?.email) return;
+    setLoading(true);
+    const data = await base44.entities.PaymentReminder.filter({ created_by: currentUser.email }, "due_date", 200);
+    setReminders(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [currentUser]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    await base44.entities.PaymentReminder.create({
+      ...form,
+      amount: form.amount ? parseFloat(form.amount) : null,
+      paid: false,
+    });
+    setSaving(false);
+    setAddOpen(false);
+    setForm(emptyForm);
+    load();
+  };
+
+  const handleTogglePaid = async (reminder) => {
+    await base44.entities.PaymentReminder.update(reminder.id, { paid: !reminder.paid });
+    load();
+  };
+
+  const handleDelete = async (id) => {
+    await base44.entities.PaymentReminder.delete(id);
+    load();
+  };
+
+  const getUrgency = (reminder) => {
+    if (reminder.paid) return "paid";
+    const days = differenceInDays(new Date(reminder.due_date), new Date());
+    if (days < 0) return "overdue";
+    if (days <= 3) return "urgent";
+    if (days <= 7) return "soon";
+    return "ok";
+  };
+
+  const urgencyConfig = {
+    paid: { color: "border-border bg-muted/30", badge: "bg-green-100 text-green-700", label: "Pago" },
+    overdue: { color: "border-destructive/40 bg-destructive/5", badge: "bg-red-100 text-red-700", label: "Vencido" },
+    urgent: { color: "border-amber-400/40 bg-amber-50/50 dark:bg-amber-950/10", badge: "bg-amber-100 text-amber-700", label: "Urgente" },
+    soon: { color: "border-yellow-400/40 bg-yellow-50/50 dark:bg-yellow-950/10", badge: "bg-yellow-100 text-yellow-700", label: "Em breve" },
+    ok: { color: "border-border", badge: "bg-blue-100 text-blue-700", label: "Pendente" },
+  };
+
+  const pending = reminders.filter((r) => !r.paid);
+  const paid = reminders.filter((r) => r.paid);
+  const totalPending = pending.reduce((s, r) => s + (r.amount || 0), 0);
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 max-w-2xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Lembretes</h1>
+          <p className="text-sm text-muted-foreground mt-1">{pending.length} contas pendentes</p>
+        </div>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2 rounded-xl shadow-sm"><Plus className="h-4 w-4" /> Nova Conta</Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader><DialogTitle className="text-lg font-bold">Nova Conta / Lembrete</DialogTitle></DialogHeader>
+            <form onSubmit={handleAdd} className="space-y-4 mt-2">
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</Label>
+                <Input className="mt-1.5 rounded-xl" placeholder="Ex: Aluguel, Fatura Nubank..." value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor (R$)</Label>
+                  <Input className="mt-1.5 rounded-xl" type="number" step="0.01" min="0" placeholder="0,00"
+                    value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</Label>
+                  <Input className="mt-1.5 rounded-xl" type="date" value={form.due_date}
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })} required />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <SelectTrigger className="mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
+                <div>
+                  <p className="text-sm font-semibold">Recorrente (mensal)</p>
+                  <p className="text-xs text-muted-foreground">Repete todo mês na mesma data</p>
+                </div>
+                <Switch checked={form.recurrent} onCheckedChange={(v) => setForm({ ...form, recurrent: v })} />
+              </div>
+              <Button type="submit" className="w-full rounded-xl" disabled={saving || !form.description || !form.due_date}>
+                {saving ? "Salvando..." : "Adicionar Lembrete"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+
+      {/* Info sobre notificações */}
+      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex gap-3">
+        <Bell className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Notificações automáticas</p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+            Para receber alertas por WhatsApp, SMS ou notificação no celular, instale o app e ative as notificações nas configurações do dispositivo. Alertas via mensagem requerem plano Premium.
+          </p>
+        </div>
+      </div>
+
+      {/* Total pendente */}
+      {pending.length > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="bg-primary rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-primary-foreground/70 uppercase tracking-wider">Total pendente</p>
+            <p className="text-2xl font-bold text-primary-foreground">
+              R$ {totalPending.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="text-right text-primary-foreground/70 text-sm">
+            <p>{pending.filter(r => getUrgency(r) === "overdue").length} vencidas</p>
+            <p>{pending.filter(r => getUrgency(r) === "urgent").length} urgentes</p>
+          </div>
+        </motion.div>
+      )}
+
+      {reminders.length === 0 ? (
+        <div className="bg-card rounded-2xl border border-border p-12 text-center">
+          <p className="text-4xl mb-3">🔔</p>
+          <p className="text-sm font-semibold">Nenhum lembrete cadastrado</p>
+          <p className="text-xs text-muted-foreground mt-1">Adicione suas contas para não esquecer de pagar.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pending.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Pendentes ({pending.length})</p>
+              <AnimatePresence>
+                {pending.map((r, i) => {
+                  const u = getUrgency(r);
+                  const cfg = urgencyConfig[u];
+                  const days = differenceInDays(new Date(r.due_date), new Date());
+                  return (
+                    <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      transition={{ delay: 0.03 * i }}
+                      className={`flex items-center gap-3 p-4 rounded-2xl border ${cfg.color}`}>
+                      <button onClick={() => handleTogglePaid(r)}
+                        className="h-6 w-6 rounded-full border-2 border-border hover:border-primary transition-all shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{r.description}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(r.due_date), "dd/MM/yyyy")}
+                          </p>
+                          {r.category && <span className="text-xs text-muted-foreground">· {r.category}</span>}
+                          {r.recurrent && <span className="text-xs text-muted-foreground">· 🔄 Mensal</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {r.amount > 0 && <p className="text-sm font-bold">R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cfg.badge}`}>
+                          {u === "overdue" ? `${Math.abs(days)}d atraso` : u === "ok" || u === "soon" || u === "urgent" ? `${days}d` : cfg.label}
+                        </span>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover lembrete?</AlertDialogTitle>
+                              <AlertDialogDescription>Deseja remover o lembrete de "{r.description}"?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                              <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {paid.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Pagos ({paid.length})</p>
+              {paid.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 p-4 rounded-2xl border border-border opacity-50">
+                  <button onClick={() => handleTogglePaid(r)}
+                    className="h-6 w-6 rounded-full bg-primary border-2 border-primary flex items-center justify-center shrink-0">
+                    <Check className="h-3.5 w-3.5 text-primary-foreground" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold line-through truncate">{r.description}</p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(r.due_date), "dd/MM/yyyy")}</p>
+                  </div>
+                  {r.amount > 0 && <p className="text-sm font-bold text-muted-foreground">R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="p-1.5 rounded-lg hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader><AlertDialogTitle>Remover?</AlertDialogTitle><AlertDialogDescription>Deseja remover "{r.description}"?</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Budget",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "title": "Categoria"
+    },
+    "limit_amount": {
+      "type": "number",
+      "title": "Limite"
+    },
+    "month": {
+      "type": "string",
+      "title": "M\u00eas (YYYY-MM)"
+    }
+  },
+  "required": [
+    "category",
+    "limit_amount",
+    "month"
+  ]
+}

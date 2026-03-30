@@ -1,0 +1,23 @@
+{
+  "name": "PaidList",
+  "type": "object",
+  "properties": {
+    "paid_date": {
+      "type": "string",
+      "title": "Data de pagamento"
+    },
+    "total": {
+      "type": "number",
+      "title": "Total pago"
+    },
+    "items_data": {
+      "type": "string",
+      "title": "Itens (JSON)"
+    }
+  },
+  "required": [
+    "paid_date",
+    "total",
+    "items_data"
+  ]
+}
