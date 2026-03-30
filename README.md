@@ -1,6 +1,6 @@
-**Kash Dashboard Local**
+**Kash Dashboard**
 
-Projeto React/Vite com autenticação local e persistência por usuário em arquivos JSON.
+Projeto React/Vite ajustado para rodar localmente e publicar no GitHub Pages.
 
 **Como rodar**
 
@@ -9,31 +9,25 @@ Projeto React/Vite com autenticação local e persistência por usuário em arqu
 3. Rode `npm install`.
 4. Rode `npm run dev`.
 
-O comando `npm run dev` sobe:
-- o frontend Vite
-- a API local em Node/Express
+**GitHub Pages**
+
+- O projeto usa `HashRouter`, então as rotas funcionam em hospedagem estática.
+- O workflow de deploy está em `.github/workflows/deploy-pages.yml`.
+- Ao subir commits para `master`, o GitHub Actions pode publicar a versão do Pages.
 
 **Login e cadastro**
 
-- Antes de entrar no dashboard, o usuário precisa criar conta ou fazer login.
+- O usuário precisa criar conta ou fazer login antes de entrar no dashboard.
 - A primeira conta criada vira admin.
-- As demais contas entram como usuário comum.
+- As demais entram como usuário comum.
 
-**Banco de dados local**
+**Persistência**
 
-- Os dados ficam na pasta `local-db`.
-- `local-db/accounts.json` guarda as contas cadastradas.
-- `local-db/sessions.json` guarda as sessões locais.
-- `local-db/users/` guarda um arquivo JSON por usuário com os dados do dashboard.
+- No GitHub Pages não existe backend nem escrita em arquivos do repositório em runtime.
+- Por isso, os dados ficam salvos no `localStorage` do navegador.
+- Cada conta usa um espaço isolado, então um usuário não vê os dados do outro no mesmo navegador.
 
-Sempre que o usuário altera transações, orçamentos, poupança, lembretes ou lista de compras, o arquivo individual dele é atualizado.
+**Limitação importante**
 
-**Privacidade entre usuários**
-
-- Cada usuário lê e grava apenas o próprio arquivo.
-- Usuários comuns não conseguem listar outros cadastros.
-- O dashboard é carregado somente após autenticação.
-
-**Observação**
-
-Os arquivos gerados em `local-db/users/`, `local-db/accounts.json` e `local-db/sessions.json` ficam fora do versionamento por padrão.
+- Como o app é estático no GitHub Pages, os dados não são compartilhados entre navegadores ou dispositivos.
+- Se limpar o armazenamento do navegador, os dados locais dessa instalação são perdidos.

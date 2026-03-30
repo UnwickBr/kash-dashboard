@@ -72,24 +72,24 @@ export default function Auth() {
               </div>
               <div className="space-y-4">
                 <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
-                  Seu painel financeiro, agora com acesso individual.
+                  Seu painel financeiro com acesso individual.
                 </h1>
                 <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-                  Cada conta cria e atualiza um arquivo próprio no projeto. Isso mantém os dados separados
-                  e evita que um usuário veja o dashboard do outro.
+                  Cada conta salva seus dados apenas no navegador atual. Isso mantém os dados separados
+                  e evita que um usuário veja o dashboard do outro neste dispositivo.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-border bg-background/80 p-4">
                   <p className="text-sm font-bold text-foreground">Cadastro antes da entrada</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O acesso ao app agora passa por conta e senha antes de abrir qualquer rota protegida.
+                    O acesso ao app passa por conta e senha antes de abrir qualquer rota protegida.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/80 p-4">
-                  <p className="text-sm font-bold text-foreground">Arquivos separados por conta</p>
+                  <p className="text-sm font-bold text-foreground">Storage por conta</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Os dados ficam em `local-db/users`, um arquivo JSON por usuário cadastrado.
+                    Os dados ficam no `localStorage`, isolados por usuário no navegador.
                   </p>
                 </div>
               </div>
