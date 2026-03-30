@@ -1,22 +1,39 @@
-**Welcome to your local Kash project** 
+**Kash Dashboard Local**
 
-**About**
+Projeto React/Vite com autenticação local e persistência por usuário em arquivos JSON.
 
-This project now runs fully locally using browser `localStorage` for data persistence.
+**Como rodar**
 
-**Edit the code in your local development environment**
+1. Entre na pasta do projeto.
+2. Use Node `18.16.1` ou superior.
+3. Rode `npm install`.
+4. Rode `npm run dev`.
 
-Data is stored in your browser, so it stays available between local runs on the same machine/browser profile.
+O comando `npm run dev` sobe:
+- o frontend Vite
+- a API local em Node/Express
 
-**Prerequisites:** 
+**Login e cadastro**
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Use Node `18.16.1` or newer
-4. Install dependencies: `npm install`
-Run the app: `npm run dev`
+- Antes de entrar no dashboard, o usuário precisa criar conta ou fazer login.
+- A primeira conta criada vira admin.
+- As demais contas entram como usuário comum.
 
-**Local data**
+**Banco de dados local**
 
-- The app seeds demo data automatically on first run.
-- To reset local data, clear the browser's `localStorage` for this app origin.
+- Os dados ficam na pasta `local-db`.
+- `local-db/accounts.json` guarda as contas cadastradas.
+- `local-db/sessions.json` guarda as sessões locais.
+- `local-db/users/` guarda um arquivo JSON por usuário com os dados do dashboard.
+
+Sempre que o usuário altera transações, orçamentos, poupança, lembretes ou lista de compras, o arquivo individual dele é atualizado.
+
+**Privacidade entre usuários**
+
+- Cada usuário lê e grava apenas o próprio arquivo.
+- Usuários comuns não conseguem listar outros cadastros.
+- O dashboard é carregado somente após autenticação.
+
+**Observação**
+
+Os arquivos gerados em `local-db/users/`, `local-db/accounts.json` e `local-db/sessions.json` ficam fora do versionamento por padrão.

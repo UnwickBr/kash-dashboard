@@ -29,3 +29,6 @@ dist-ssr
 
 .env
 .vite
+local-db/accounts.json
+local-db/sessions.json
+local-db/users/

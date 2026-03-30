@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { base44, localBase44AuthEvent } from "@/api/base44Client";
+import { base44 } from "@/api/base44Client";
 
 const AuthContext = createContext();
 
@@ -7,53 +7,89 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
+  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState({ mode: "local" });
+  const [appPublicSettings, setAppPublicSettings] = useState({ mode: "local-files" });
 
-  const checkAppState = async () => {
+  const refreshSession = async () => {
+    if (!base44.auth.getToken()) {
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoadingAuth(false);
+      setAuthError(null);
+      return;
+    }
+
     try {
-      setIsLoadingPublicSettings(true);
       setIsLoadingAuth(true);
       setAuthError(null);
       const currentUser = await base44.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
-      setAppPublicSettings({ mode: "local", auth_required: false });
     } catch (error) {
       setUser(null);
       setIsAuthenticated(false);
       setAuthError({
-        type: "unknown",
-        message: error.message || "Falha ao carregar usuário local",
+        type: error.status === 401 ? "auth_required" : "unknown",
+        message: error.message || "Falha ao carregar sessão local.",
       });
     } finally {
-      setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
     }
   };
 
   useEffect(() => {
-    checkAppState();
-
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handleAuthChange = () => {
-      checkAppState();
-    };
-
-    window.addEventListener(localBase44AuthEvent, handleAuthChange);
-    return () => window.removeEventListener(localBase44AuthEvent, handleAuthChange);
+    refreshSession();
   }, []);
 
-  const logout = () => {
-    base44.auth.logout();
+  const login = async ({ email, password }) => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
+    try {
+      const currentUser = await base44.auth.login({ email, password });
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      return currentUser;
+    } catch (error) {
+      setAuthError({
+        type: error.status === 401 ? "auth_required" : "unknown",
+        message: error.message || "Não foi possível entrar.",
+      });
+      throw error;
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const register = async ({ fullName, email, password }) => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
+    try {
+      const currentUser = await base44.auth.register({ fullName, email, password });
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      return currentUser;
+    } catch (error) {
+      setAuthError({
+        type: "unknown",
+        message: error.message || "Não foi possível criar a conta.",
+      });
+      throw error;
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const logout = async () => {
+    await base44.auth.logout();
+    setUser(null);
+    setIsAuthenticated(false);
+    setAuthError(null);
   };
 
   const navigateToLogin = () => {
-    base44.auth.redirectToLogin();
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
   return (
@@ -65,9 +101,11 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      login,
+      register,
       logout,
       navigateToLogin,
-      checkAppState,
+      checkAppState: refreshSession,
     }}>
       {children}
     </AuthContext.Provider>

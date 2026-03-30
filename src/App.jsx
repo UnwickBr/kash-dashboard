@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppErrorBoundary from '@/components/AppErrorBoundary';
 import Layout from './components/Layout';
+import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Budgets from './pages/Budgets';
@@ -17,7 +18,7 @@ import Premium from './pages/Premium';
 import Admin from './pages/Admin';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -33,6 +34,10 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     }
+  }
+
+  if (!isAuthenticated) {
+    return <Auth />;
   }
 
   // Render the main app
