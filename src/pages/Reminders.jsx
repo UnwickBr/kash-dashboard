@@ -259,7 +259,7 @@ export default function Reminders() {
         <div className="flex-1">
           <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lembretes por email</p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-            O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer. Push, SMS e WhatsApp ainda não estão disponíveis.
+            O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer.
           </p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
             Notificações de lembrete com integração ao calendário do celular estarão disponíveis apenas para contas conectadas com Google.
