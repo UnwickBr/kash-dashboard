@@ -20,13 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const features = [
-  { icon: BarChart2, label: "Graficos e relatorios completos", free: true },
-  { icon: Zap, label: "Transacoes ilimitadas", free: true },
-  { icon: PiggyBank, label: "Metas de poupanca ilimitadas", free: false },
+  { icon: BarChart2, label: "Gráficos e relatórios completos", free: true },
+  { icon: Zap, label: "Transações ilimitadas", free: true },
+  { icon: PiggyBank, label: "Metas de poupança ilimitadas", free: false },
   { icon: ShoppingCart, label: "Listas de compras ilimitadas", free: false },
   { icon: Bell, label: "Lembretes de pagamento", free: false },
-  { icon: Lock, label: "Parcelamento automatico de gastos", free: false },
-  { icon: Crown, label: "Acesso prioritario a novidades", free: false },
+  { icon: Lock, label: "Parcelamento automático de gastos", free: false },
+  { icon: Crown, label: "Acesso prioritário a novidades", free: false },
 ];
 
 export default function Premium() {
@@ -57,14 +57,14 @@ export default function Premium() {
     if (checkoutStatus === "success") {
       toast({
         title: "Pagamento iniciado",
-        description: "Assim que o Asaas confirmar o pagamento, seu plano premium sera ativado automaticamente.",
+        description: "Assim que o Asaas confirmar o pagamento, seu plano premium será ativado automaticamente.",
       });
     }
 
     if (checkoutStatus === "cancel") {
       toast({
         title: "Checkout cancelado",
-        description: "Voce pode tentar novamente quando quiser.",
+        description: "Você pode tentar novamente quando quiser.",
       });
     }
 
@@ -87,12 +87,12 @@ export default function Premium() {
       setCancelDialogOpen(false);
       toast({
         title: "Cancelamento agendado",
-        description: "Seu plano premium seguira ativo ate o fim do ciclo atual.",
+        description: "Seu plano premium seguirá ativo até o fim do ciclo atual.",
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Nao foi possivel cancelar",
+        title: "Não foi possível cancelar",
         description: error.message || "Tente novamente em instantes.",
       });
     } finally {
@@ -109,7 +109,7 @@ export default function Premium() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Nao foi possivel iniciar a assinatura",
+        title: "Não foi possível iniciar a assinatura",
         description: error.message || "Tente novamente em instantes.",
       });
       setLoadingCheckout(false);
@@ -121,15 +121,15 @@ export default function Premium() {
     try {
       const result = await syncPremiumStatus();
       toast({
-        title: result.activated ? "Premium liberado" : "Pagamento ainda nao localizado",
+        title: result.activated ? "Premium liberado" : "Pagamento ainda não localizado",
         description: result.activated
           ? "Seu acesso premium foi ativado com sucesso."
-          : "Se voce acabou de pagar, aguarde alguns instantes e tente novamente.",
+          : "Se você acabou de pagar, aguarde alguns instantes e tente novamente.",
       });
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Nao foi possivel verificar o pagamento",
+        title: "Não foi possível verificar o pagamento",
         description: error.message || "Tente novamente em instantes.",
       });
     } finally {
@@ -144,7 +144,7 @@ export default function Premium() {
           <Crown className="h-8 w-8 text-amber-500" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight">Kash Premium</h1>
-        <p className="text-muted-foreground mt-2">Desbloqueie todos os recursos e tenha controle total das suas financas.</p>
+        <p className="text-muted-foreground mt-2">Desbloqueie todos os recursos e tenha controle total das suas finanças.</p>
       </motion.div>
 
       {isPremium ? (
@@ -155,10 +155,10 @@ export default function Premium() {
         >
           <div>
             <Crown className="h-8 w-8 text-amber-500 mx-auto mb-3" />
-            <p className="text-lg font-bold">Voce ja e Premium!</p>
+            <p className="text-lg font-bold">Você já é Premium!</p>
             <p className="text-sm text-muted-foreground mt-1">
               {cancellationScheduled && accessEndsLabel
-                ? `Seu cancelamento foi agendado. O acesso premium continua liberado ate ${accessEndsLabel}.`
+                ? `Seu cancelamento foi agendado. O acesso premium continua liberado até ${accessEndsLabel}.`
                 : "Aproveite todos os recursos desbloqueados."}
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function Premium() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Cancelar assinatura premium?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    O cancelamento nao bloqueia seu acesso imediatamente. Seus beneficios premium continuam ativos ate o fim do ciclo atual.
+                    O cancelamento não bloqueia seu acesso imediatamente. Seus benefícios premium continuam ativos até o fim do ciclo atual.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -206,7 +206,7 @@ export default function Premium() {
           <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Plano Premium</p>
           <div>
             <span className="text-5xl font-bold">R$ 20</span>
-            <span className="text-lg opacity-70">/mes</span>
+            <span className="text-lg opacity-70">/mês</span>
           </div>
           <p className="text-sm opacity-80">Cancele quando quiser. Sem compromisso.</p>
           <Button
@@ -222,9 +222,9 @@ export default function Premium() {
             onClick={handleSyncPremium}
             disabled={loadingSync}
           >
-            {loadingSync ? "Verificando..." : "Ja paguei, verificar acesso"}
+            {loadingSync ? "Verificando..." : "Já paguei, verificar acesso"}
           </Button>
-          <p className="text-xs opacity-60">Pagamento seguro · renovacao automatica mensal</p>
+          <p className="text-xs opacity-60">Pagamento seguro · renovação automática mensal</p>
         </motion.div>
       )}
 
@@ -234,7 +234,7 @@ export default function Premium() {
         transition={{ delay: 0.2 }}
         className="bg-card rounded-2xl border border-border p-5 space-y-3"
       >
-        <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">O que esta incluso</p>
+        <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">O que está incluso</p>
         {features.map((feature) => (
           <div key={feature.label} className={`flex items-center gap-3 p-3 rounded-xl ${feature.free ? "opacity-70" : ""}`}>
             <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isPremium || feature.free ? "bg-primary/10" : "bg-muted"}`}>
@@ -243,7 +243,7 @@ export default function Premium() {
             <span className={`text-sm font-medium ${!isPremium && !feature.free ? "text-muted-foreground" : "text-foreground"}`}>{feature.label}</span>
             <div className="ml-auto">
               {feature.free ? (
-                <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">Gratis</span>
+                <span className="text-xs bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">Grátis</span>
               ) : isPremium ? (
                 <Check className="h-4 w-4 text-primary" />
               ) : (

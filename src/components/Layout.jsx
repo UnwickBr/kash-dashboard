@@ -23,9 +23,9 @@ import kashLogo from "@/assets/kash-logo.png";
 
 const navItems = [
   { path: "/", label: "Painel", icon: LayoutDashboard },
-  { path: "/transacoes", label: "Transacoes", icon: ArrowLeftRight },
-  { path: "/orcamentos", label: "Orcamentos", icon: Target, premiumOnly: true },
-  { path: "/poupanca", label: "Poupanca", icon: PiggyBank, premiumOnly: true },
+  { path: "/transacoes", label: "Transações", icon: ArrowLeftRight },
+  { path: "/orcamentos", label: "Orçamentos", icon: Target, premiumOnly: true },
+  { path: "/poupanca", label: "Poupança", icon: PiggyBank, premiumOnly: true },
   { path: "/lista-compras", label: "Lista de Compras", icon: ShoppingCart, premiumOnly: true },
   { path: "/lembretes", label: "Lembretes", icon: Bell, premiumOnly: true },
   { path: "/premium", label: "Premium", icon: Crown },
@@ -79,7 +79,7 @@ export default function Layout() {
               alt="Kash Dashboard"
               className="h-auto w-[210px] max-w-full object-contain"
             />
-            <p className="text-xs text-muted-foreground mt-2">Gestao financeira pessoal</p>
+            <p className="text-xs text-muted-foreground mt-2">Gestão financeira pessoal</p>
           </div>
           <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-secondary transition-colors mt-0.5">
             {dark ? (
@@ -128,7 +128,7 @@ export default function Layout() {
 
         <div className="pt-4 border-t border-border space-y-4">
           <div className="rounded-2xl bg-secondary/70 p-3">
-            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuario"}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuário"}</p>
             <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
           </div>
           <Link

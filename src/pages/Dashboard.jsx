@@ -18,7 +18,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState("current");
-  const firstName = (currentUser?.full_name || "usuario").trim().split(/\s+/)[0];
+  const firstName = (currentUser?.full_name || "usuário").trim().split(/\s+/)[0];
 
   const loadData = async () => {
     setLoading(true);
@@ -69,7 +69,7 @@ export default function Dashboard() {
       return format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
     }
 
-    return monthOptions.find((option) => option.value === selectedMonth)?.label || "mes selecionado";
+    return monthOptions.find((option) => option.value === selectedMonth)?.label || "mês selecionado";
   }, [monthOptions, selectedMonth]);
 
   const stats = useMemo(() => {
@@ -172,10 +172,10 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row gap-3">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="min-w-[220px] rounded-xl">
-              <SelectValue placeholder="Filtrar mes" />
+              <SelectValue placeholder="Filtrar mês" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="current">Mes atual</SelectItem>
+              <SelectItem value="current">Mês atual</SelectItem>
               <SelectItem value="all">Todos os meses</SelectItem>
               {monthOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
@@ -189,7 +189,7 @@ export default function Dashboard() {
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Saldo do Mes" value={formatCurrency(stats.balance)} icon={Wallet} />
+        <StatCard title="Saldo do Mês" value={formatCurrency(stats.balance)} icon={Wallet} />
         <StatCard title="Receitas" value={formatCurrency(stats.income)} icon={TrendingUp} />
         <StatCard title="Despesas" value={formatCurrency(stats.expenses)} icon={TrendingDown} />
       </div>
@@ -223,7 +223,7 @@ export default function Dashboard() {
           transition={{ delay: 0.25 }}
           className="bg-card rounded-2xl border border-border p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Parcelas nos Proximos Meses</h3>
+          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Parcelas nos Próximos Meses</h3>
           <div className="flex gap-3 flex-wrap">
             {futureInstallments.map((item) => (
               <div key={item.month} className="flex-1 min-w-[100px] bg-secondary/40 rounded-xl p-3">
@@ -244,14 +244,14 @@ export default function Dashboard() {
         className="bg-card rounded-2xl border border-border p-5 sm:p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Transacoes Recentes</h3>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Transações Recentes</h3>
           <Link to="/transacoes" className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
             Ver todas <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         {recentTransactions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhuma transacao encontrada para esse periodo.
+            Nenhuma transação encontrada para esse período.
           </p>
         ) : (
           <div>

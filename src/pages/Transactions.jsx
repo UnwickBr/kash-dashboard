@@ -98,9 +98,9 @@ export default function Transactions() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Transacoes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Transações</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {transactions.length} transacoes registradas e salvas no seu historico
+            {transactions.length} transações registradas e salvas no seu histórico
           </p>
         </div>
         <AddTransactionDialog onSuccess={loadData} />
@@ -116,7 +116,7 @@ export default function Transactions() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9 rounded-xl"
-            placeholder="Buscar transacao..."
+            placeholder="Buscar transação..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -149,7 +149,7 @@ export default function Transactions() {
 
         <Select value={filterMonth} onValueChange={setFilterMonth}>
           <SelectTrigger className="w-full xl:w-52 rounded-xl">
-            <SelectValue placeholder="Mes" />
+            <SelectValue placeholder="Mês" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os meses</SelectItem>
@@ -171,8 +171,8 @@ export default function Transactions() {
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">
             {search || filterType !== "all" || filterCategory !== "all" || filterMonth !== "all"
-              ? "Nenhuma transacao encontrada com esses filtros."
-              : "Nenhuma transacao registrada ainda."}
+              ? "Nenhuma transação encontrada com esses filtros."
+              : "Nenhuma transação registrada ainda."}
           </p>
         ) : (
           <div>
@@ -185,16 +185,16 @@ export default function Transactions() {
                   <AlertDialogTrigger asChild>
                     <button
                       className="flex h-10 w-10 items-center justify-center rounded-xl opacity-100 transition-all hover:bg-destructive/10 md:opacity-0 md:group-hover:opacity-100"
-                      aria-label={`Excluir transacao ${transaction.description}`}
+                      aria-label={`Excluir transação ${transaction.description}`}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir transacao?</AlertDialogTitle>
+                      <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir "{transaction.description}"? Esta acao nao pode ser desfeita.
+                        Tem certeza que deseja excluir "{transaction.description}"? Esta ação não pode ser desfeita.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
