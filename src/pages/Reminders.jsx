@@ -1,17 +1,27 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useAuth } from "@/lib/AuthContext";
+import { useEffect, useState } from "react";
+import { format, differenceInDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Bell, Trash2, Check, Calendar } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
+import { parseStoredDate } from "@/lib/date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { format, differenceInDays } from "date-fns";
-import { parseStoredDate } from "@/lib/date";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const categories = ["Moradia", "Cartão de Crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
 
@@ -182,6 +192,9 @@ export default function Reminders() {
           <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lembretes por email</p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
             O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer. Push, SMS e WhatsApp ainda não estão disponíveis.
+          </p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+            Notificações de lembrete com integração ao calendário do celular estarão disponíveis apenas para contas conectadas com Google.
           </p>
         </div>
       </div>
