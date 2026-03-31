@@ -14,6 +14,7 @@ import {
   Shield,
   LogOut,
   UserRound,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
@@ -21,11 +22,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navItems = [
   { path: "/", label: "Painel", icon: LayoutDashboard },
-  { path: "/transacoes", label: "Transações", icon: ArrowLeftRight },
-  { path: "/orcamentos", label: "Orçamentos", icon: Target },
-  { path: "/poupanca", label: "Poupança", icon: PiggyBank },
-  { path: "/lista-compras", label: "Lista de Compras", icon: ShoppingCart },
-  { path: "/lembretes", label: "Lembretes", icon: Bell },
+  { path: "/transacoes", label: "Transacoes", icon: ArrowLeftRight },
+  { path: "/orcamentos", label: "Orcamentos", icon: Target, premiumOnly: true },
+  { path: "/poupanca", label: "Poupanca", icon: PiggyBank, premiumOnly: true },
+  { path: "/lista-compras", label: "Lista de Compras", icon: ShoppingCart, premiumOnly: true },
+  { path: "/lembretes", label: "Lembretes", icon: Bell, premiumOnly: true },
   { path: "/premium", label: "Premium", icon: Crown },
 ];
 
@@ -35,8 +36,10 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dark, setDark] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("theme") === "dark" ||
-        (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      return (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches)
+      );
     }
     return false;
   });
@@ -63,6 +66,10 @@ export default function Layout() {
   }, [mobileOpen]);
 
   const toggleDark = () => setDark((current) => !current);
+  const isPremiumUser =
+    currentUser?.role === "premium" ||
+    currentUser?.role === "admin" ||
+    currentUser?.subscription_status === "active";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -70,18 +77,24 @@ export default function Layout() {
         <div className="mb-10 flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-blue-500">Kash</span><span className="text-foreground"> Dashboard</span>
+              <span className="text-blue-500">Kash</span>
+              <span className="text-foreground"> Dashboard</span>
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">Gestão financeira pessoal</p>
+            <p className="text-xs text-muted-foreground mt-1">Gestao financeira pessoal</p>
           </div>
           <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-secondary transition-colors mt-0.5">
-            {dark ? <Sun className="h-4 w-4 text-muted-foreground" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
+            {dark ? (
+              <Sun className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            )}
           </button>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
           {navItems.map((item) => {
             const active = location.pathname === item.path;
+            const locked = item.premiumOnly && !isPremiumUser;
             return (
               <Link
                 key={item.path}
@@ -93,7 +106,8 @@ export default function Layout() {
                 }`}
               >
                 <item.icon className="h-4 w-4" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : null}
               </Link>
             );
           })}
@@ -115,7 +129,7 @@ export default function Layout() {
 
         <div className="pt-4 border-t border-border space-y-4">
           <div className="rounded-2xl bg-secondary/70 p-3">
-            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuário"}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuario"}</p>
             <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
           </div>
           <Link
@@ -137,13 +151,14 @@ export default function Layout() {
             <LogOut className="h-4 w-4" />
             Sair
           </button>
-          <p className="text-[10px] text-muted-foreground text-center">Kash Dashboard © 2026</p>
+          <p className="text-[10px] text-muted-foreground text-center">Kash Dashboard (c) 2026</p>
         </div>
       </aside>
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
         <h1 className="text-lg font-bold tracking-tight">
-          <span className="text-blue-500">Kash</span><span className="text-foreground"> Dashboard</span>
+          <span className="text-blue-500">Kash</span>
+          <span className="text-foreground"> Dashboard</span>
         </h1>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -172,59 +187,65 @@ export default function Layout() {
               exit={{ opacity: 0, y: -10 }}
               className="lg:hidden fixed top-[calc(4.5rem+env(safe-area-inset-top))] left-3 right-3 z-40 rounded-2xl bg-card border border-border p-3 shadow-lg"
             >
-            <nav className="flex flex-col gap-1">
-              {navItems.map((item) => {
-                const active = location.pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-              <Link
-                to="/meu-perfil"
-                onClick={() => setMobileOpen(false)}
-                className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                  location.pathname === "/meu-perfil"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
-              >
-                <UserRound className="h-4 w-4" />
-                Meu perfil
-              </Link>
-              {currentUser?.role === "admin" && (
+              <nav className="flex flex-col gap-1">
+                {navItems.map((item) => {
+                  const active = location.pathname === item.path;
+                  const locked = item.premiumOnly && !isPremiumUser;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span className="flex-1">{item.label}</span>
+                      {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : null}
+                    </Link>
+                  );
+                })}
                 <Link
-                  to="/admin"
+                  to="/meu-perfil"
                   onClick={() => setMobileOpen(false)}
                   className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    location.pathname === "/admin" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    location.pathname === "/meu-perfil"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <Shield className="h-4 w-4" />
-                  Admin
+                  <UserRound className="h-4 w-4" />
+                  Meu perfil
                 </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  logout();
-                }}
-                className="flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </button>
-            </nav>
+                {currentUser?.role === "admin" && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      location.pathname === "/admin"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    logout();
+                  }}
+                  className="flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </nav>
             </motion.div>
           </>
         )}

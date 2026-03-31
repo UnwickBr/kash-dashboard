@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/AuthContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 import Layout from "./components/Layout";
+import PremiumFeatureGate from "./components/PremiumFeatureGate";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
@@ -49,10 +50,38 @@ const AuthenticatedApp = () => {
         <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/transacoes" element={<Transactions />} />
-        <Route path="/orcamentos" element={<Budgets />} />
-        <Route path="/poupanca" element={<Savings />} />
-        <Route path="/lista-compras" element={<ShoppingList />} />
-        <Route path="/lembretes" element={<Reminders />} />
+        <Route
+          path="/orcamentos"
+          element={
+            <PremiumFeatureGate featureName="Orcamentos">
+              <Budgets />
+            </PremiumFeatureGate>
+          }
+        />
+        <Route
+          path="/poupanca"
+          element={
+            <PremiumFeatureGate featureName="Poupanca">
+              <Savings />
+            </PremiumFeatureGate>
+          }
+        />
+        <Route
+          path="/lista-compras"
+          element={
+            <PremiumFeatureGate featureName="Lista de Compras">
+              <ShoppingList />
+            </PremiumFeatureGate>
+          }
+        />
+        <Route
+          path="/lembretes"
+          element={
+            <PremiumFeatureGate featureName="Lembretes">
+              <Reminders />
+            </PremiumFeatureGate>
+          }
+        />
         <Route path="/premium" element={<Premium />} />
         <Route path="/meu-perfil" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
