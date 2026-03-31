@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Crown, Check, Lock, Zap, PiggyBank, ShoppingCart, Bell, BarChart2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "@/components/ui/use-toast";
@@ -29,6 +30,8 @@ const features = [
 
 export default function Premium() {
   const { currentUser, cancelSubscription, createPremiumCheckout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [loadingCancel, setLoadingCancel] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
@@ -39,6 +42,39 @@ export default function Premium() {
   const accessEndsLabel = currentUser?.subscription_expires_at
     ? format(new Date(currentUser.subscription_expires_at), "dd/MM/yyyy")
     : null;
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const checkoutStatus = params.get("checkout");
+
+    if (!checkoutStatus) {
+      return;
+    }
+
+    if (checkoutStatus === "success") {
+      toast({
+        title: "Pagamento iniciado",
+        description: "Assim que o Asaas confirmar o pagamento, seu plano premium sera ativado automaticamente.",
+      });
+    }
+
+    if (checkoutStatus === "cancel") {
+      toast({
+        title: "Checkout cancelado",
+        description: "Voce pode tentar novamente quando quiser.",
+      });
+    }
+
+    if (checkoutStatus === "expired") {
+      toast({
+        variant: "destructive",
+        title: "Checkout expirado",
+        description: "Seu link expirou. Gere um novo checkout para continuar.",
+      });
+    }
+
+    navigate("/premium", { replace: true });
+  }, [location.search, navigate]);
 
   const handleCancelSubscription = async () => {
     setLoadingCancel(true);
@@ -153,7 +189,7 @@ export default function Premium() {
             onClick={handleStartCheckout}
             disabled={loadingCheckout}
           >
-            <Crown className="h-4 w-4 mr-2" /> Assinar Agora
+            <Crown className="h-4 w-4 mr-2" /> {loadingCheckout ? "Abrindo checkout..." : "Assinar Agora"}
           </Button>
           <p className="text-xs opacity-60">Pagamento seguro · renovacao automatica mensal</p>
         </motion.div>

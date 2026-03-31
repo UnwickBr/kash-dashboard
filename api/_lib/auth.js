@@ -32,10 +32,11 @@ const addDaysIso = (dateLike, days) => {
 
 export const hasPremiumAccess = (user) => {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "premium") {
+  if (user.role === "admin") {
     return true;
   }
-  if (user.subscription_status !== "active") {
+  const premiumFlag = user.role === "premium" || user.subscription_status === "active";
+  if (!premiumFlag) {
     return false;
   }
   if (!user.subscription_expires_at) {
@@ -175,6 +176,9 @@ export const registerUser = async ({ fullName, email, password, birthDate }) => 
       email_verified_at,
       role,
       subscription_status,
+      subscription_started_at,
+      subscription_expires_at,
+      subscription_canceled_at,
       password_hash,
       password_salt,
       created_at

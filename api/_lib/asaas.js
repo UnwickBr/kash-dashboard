@@ -48,6 +48,26 @@ export const buildCheckoutUrl = (checkoutId) => {
   return `${checkoutHost}/checkoutSession/show?id=${checkoutId}`;
 };
 
+export const assertAsaasWebhookToken = (req) => {
+  const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+  if (!expectedToken) {
+    const error = new Error("ASAAS_WEBHOOK_TOKEN nao configurado.");
+    error.status = 500;
+    throw error;
+  }
+
+  const receivedToken =
+    req.headers["asaas-access-token"] ||
+    req.headers["Asaas-Access-Token"] ||
+    req.headers["asaas_access_token"];
+
+  if (receivedToken !== expectedToken) {
+    const error = new Error("Webhook do Asaas rejeitado por token invalido.");
+    error.status = 401;
+    throw error;
+  }
+};
+
 export const ensureAsaasCustomer = async (user) => {
   await ensureSchema();
   const sql = getSql();
@@ -71,4 +91,30 @@ export const ensureAsaasCustomer = async (user) => {
   `;
 
   return createdCustomer.id;
+};
+
+export const activatePremiumByAsaasCustomer = async ({ customerId, subscriptionId, paidAt }) => {
+  if (!customerId) {
+    return null;
+  }
+
+  await ensureSchema();
+  const sql = getSql();
+  const startedAt = paidAt || new Date().toISOString();
+  const expiresAt = new Date(new Date(startedAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const rows = await sql`
+    UPDATE users
+    SET
+      subscription_status = 'active',
+      role = CASE WHEN role = 'user' THEN 'premium' ELSE role END,
+      subscription_started_at = ${startedAt},
+      subscription_expires_at = ${expiresAt},
+      subscription_canceled_at = NULL,
+      asaas_subscription_id = COALESCE(${subscriptionId || null}, asaas_subscription_id)
+    WHERE asaas_customer_id = ${customerId}
+    RETURNING *
+  `;
+
+  return rows[0] || null;
 };
