@@ -25,6 +25,25 @@ const getGoogleClient = () => {
   return googleClient;
 };
 
+const addDaysIso = (dateLike, days) => {
+  const baseDate = dateLike ? new Date(dateLike) : new Date();
+  return new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+};
+
+export const hasPremiumAccess = (user) => {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "premium") {
+    return true;
+  }
+  if (user.subscription_status !== "active") {
+    return false;
+  }
+  if (!user.subscription_expires_at) {
+    return true;
+  }
+  return new Date(user.subscription_expires_at).getTime() > Date.now();
+};
+
 export const createPasswordHash = (password, salt = crypto.randomBytes(16).toString("hex")) => ({
   salt,
   passwordHash: hashPassword(password, salt),
@@ -47,6 +66,10 @@ export const sanitizeUser = (user) => ({
   email_verified: user.email_verified,
   role: user.role,
   subscription_status: user.subscription_status,
+  subscription_started_at: user.subscription_started_at,
+  subscription_expires_at: user.subscription_expires_at,
+  subscription_canceled_at: user.subscription_canceled_at,
+  has_premium_access: hasPremiumAccess(user),
   created_date: user.created_at || user.created_date,
 });
 
@@ -86,6 +109,9 @@ export const getUserFromRequest = async (req) => {
       u.email_verified_at,
       u.role,
       u.subscription_status,
+      u.subscription_started_at,
+      u.subscription_expires_at,
+      u.subscription_canceled_at,
       u.created_at
     FROM sessions s
     INNER JOIN users u ON u.id = s.user_id
@@ -158,6 +184,9 @@ export const registerUser = async ({ fullName, email, password, birthDate }) => 
       ${null},
       ${isFirstUser ? "admin" : "user"},
       ${isFirstUser ? "active" : "inactive"},
+      ${isFirstUser ? createdAt : null},
+      ${isFirstUser ? addDaysIso(createdAt, 30) : null},
+      ${null},
       ${passwordHash},
       ${salt},
       ${createdAt}
@@ -292,6 +321,9 @@ export const findOrCreateGoogleUser = async (payload) => {
       email_verified_at,
       role,
       subscription_status,
+      subscription_started_at,
+      subscription_expires_at,
+      subscription_canceled_at,
       password_hash,
       password_salt,
       created_at
@@ -307,6 +339,9 @@ export const findOrCreateGoogleUser = async (payload) => {
       ${verifiedAt},
       ${isFirstUser ? "admin" : "user"},
       ${isFirstUser ? "active" : "inactive"},
+      ${isFirstUser ? createdAt : null},
+      ${isFirstUser ? addDaysIso(createdAt, 30) : null},
+      ${null},
       ${passwordHash},
       ${salt},
       ${createdAt}

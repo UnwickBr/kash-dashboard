@@ -66,10 +66,7 @@ export default function Layout() {
   }, [mobileOpen]);
 
   const toggleDark = () => setDark((current) => !current);
-  const isPremiumUser =
-    currentUser?.role === "premium" ||
-    currentUser?.role === "admin" ||
-    currentUser?.subscription_status === "active";
+  const isPremiumUser = Boolean(currentUser?.has_premium_access);
 
   return (
     <div className="min-h-screen bg-background flex">

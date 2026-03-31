@@ -3,13 +3,10 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 
-const hasPremiumAccess = (user) =>
-  user?.role === "premium" || user?.role === "admin" || user?.subscription_status === "active";
-
 export default function PremiumFeatureGate({ featureName, children }) {
   const { currentUser } = useAuth();
 
-  if (hasPremiumAccess(currentUser)) {
+  if (currentUser?.has_premium_access) {
     return children;
   }
 

@@ -15,14 +15,32 @@ export default async function handler(req, res) {
 
       if (req.method === "PATCH") {
         const body = await parseJsonBody(req);
+        const nextSubscriptionStatus = body.subscription_status ?? null;
+        const activatingPremium = nextSubscriptionStatus === "active";
+        const deactivatingPremium = nextSubscriptionStatus === "inactive";
         const rows = await sql`
           UPDATE users
           SET
             full_name = COALESCE(${body.full_name}, full_name),
             role = COALESCE(${body.role}, role),
-            subscription_status = COALESCE(${body.subscription_status}, subscription_status)
+            subscription_status = COALESCE(${body.subscription_status}, subscription_status),
+            subscription_started_at = CASE
+              WHEN ${activatingPremium} THEN COALESCE(subscription_started_at, NOW())
+              WHEN ${deactivatingPremium} THEN NULL
+              ELSE subscription_started_at
+            END,
+            subscription_expires_at = CASE
+              WHEN ${activatingPremium} THEN COALESCE(subscription_expires_at, NOW() + INTERVAL '30 days')
+              WHEN ${deactivatingPremium} THEN NULL
+              ELSE subscription_expires_at
+            END,
+            subscription_canceled_at = CASE
+              WHEN ${activatingPremium} THEN NULL
+              WHEN ${deactivatingPremium} THEN NOW()
+              ELSE subscription_canceled_at
+            END
           WHERE id = ${id}
-          RETURNING id, full_name, email, role, subscription_status, created_at
+          RETURNING *
         `;
         if (!rows.length) {
           return sendJson(res, 404, { message: "Usuário não encontrado." });

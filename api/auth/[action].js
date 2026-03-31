@@ -17,6 +17,8 @@ import {
 import { issueEmailVerificationToken, sendVerificationEmail } from "../_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "../_lib/utils.js";
 
+const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+
 const handlers = {
   async register(req, res) {
     if (req.method !== "POST") {
@@ -133,7 +135,7 @@ const handlers = {
 
     const storedUser = rows[0];
     if (!storedUser || !verifyPassword(currentPassword, storedUser)) {
-      const error = new Error("A senha atual está incorreta.");
+      const error = new Error("A senha atual esta incorreta.");
       error.status = 400;
       throw error;
     }
@@ -159,18 +161,31 @@ const handlers = {
     const user = await requireAuth(req);
 
     if (user.role === "admin") {
-      const error = new Error("Administradores não podem cancelar a assinatura por esta tela.");
+      const error = new Error("Administradores nao podem cancelar a assinatura por esta tela.");
+      error.status = 400;
+      throw error;
+    }
+
+    if (!user.has_premium_access && user.subscription_status !== "active") {
+      const error = new Error("Nao ha uma assinatura premium ativa para cancelar.");
       error.status = 400;
       throw error;
     }
 
     await ensureSchema();
     const sql = getSql();
+    const cycleBase = user.subscription_started_at || user.created_at || new Date().toISOString();
+    const cycleEndsAt =
+      user.subscription_expires_at ||
+      new Date(new Date(cycleBase).getTime() + THIRTY_DAYS_IN_MS).toISOString();
+
     const rows = await sql`
       UPDATE users
       SET
-        subscription_status = 'inactive',
-        role = CASE WHEN role = 'premium' THEN 'user' ELSE role END
+        subscription_status = 'active',
+        subscription_started_at = COALESCE(subscription_started_at, ${cycleBase}),
+        subscription_expires_at = COALESCE(subscription_expires_at, ${cycleEndsAt}),
+        subscription_canceled_at = ${new Date().toISOString()}
       WHERE id = ${user.id}
       RETURNING *
     `;
