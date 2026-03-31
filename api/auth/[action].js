@@ -208,6 +208,36 @@ const handlers = {
       throw error;
     }
 
+    const body = await parseJsonBody(req);
+    const payer = {
+      name: String(body.fullName || user.full_name || "").trim(),
+      email: user.email,
+      cpfCnpj: String(body.cpfCnpj || "").replace(/\D/g, ""),
+      phone: String(body.phone || "").replace(/\D/g, ""),
+      postalCode: String(body.postalCode || "").replace(/\D/g, ""),
+      addressNumber: String(body.addressNumber || "").trim(),
+      address: String(body.address || "").trim(),
+      province: String(body.province || "").trim(),
+      city: String(body.city || "").trim(),
+      state: String(body.state || "").trim().toUpperCase(),
+    };
+
+    if (
+      payer.name.length < 3 ||
+      payer.cpfCnpj.length !== 11 ||
+      payer.phone.length < 10 ||
+      payer.postalCode.length !== 8 ||
+      !payer.addressNumber ||
+      !payer.address ||
+      !payer.province ||
+      !payer.city ||
+      payer.state.length !== 2
+    ) {
+      const error = new Error("Preencha os dados do pagador corretamente antes de continuar.");
+      error.status = 400;
+      throw error;
+    }
+
     await ensureSchema();
     const sql = getSql();
     await ensureAsaasCustomer(user);
@@ -235,10 +265,7 @@ const handlers = {
             value: 20,
           },
         ],
-        customerData: {
-          name: user.full_name,
-          email: user.email,
-        },
+        customerData: payer,
         subscription: {
           cycle: "MONTHLY",
           nextDueDate: toAsaasDateTime(nextDueDate),

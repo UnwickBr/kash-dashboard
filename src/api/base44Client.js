@@ -131,9 +131,10 @@ export const base44 = {
         method: "POST",
       });
     },
-    async createPremiumCheckout() {
+    async createPremiumCheckout(payload) {
       return request("/api/auth/create-premium-checkout", {
         method: "POST",
+        body: payload,
       });
     },
     async logout() {

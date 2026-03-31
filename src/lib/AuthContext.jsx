@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
-  const createPremiumCheckout = async () => base44.auth.createPremiumCheckout();
+  const createPremiumCheckout = async (payload) => base44.auth.createPremiumCheckout(payload);
 
   const navigateToLogin = () => {
     setUser(null);
