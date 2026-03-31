@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { LockKeyhole, UserPlus, WalletCards } from "lucide-react";
+import { Database, LockKeyhole, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,16 +67,16 @@ export default function Auth() {
           >
             <div className="max-w-xl space-y-6">
               <div className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-                <WalletCards className="h-4 w-4" />
-                Dados salvos localmente por usuário
+                <Database className="h-4 w-4" />
+                Autenticação e dados via Vercel + Neon
               </div>
               <div className="space-y-4">
                 <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
-                  Seu painel financeiro com acesso individual.
+                  Seu painel financeiro com conta individual e banco real.
                 </h1>
                 <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-                  Cada conta salva seus dados apenas no navegador atual. Isso mantém os dados separados
-                  e evita que um usuário veja o dashboard do outro neste dispositivo.
+                  Cada usuário entra com email e senha, e os dados ficam guardados no Neon com acesso
+                  mediado pelas functions da Vercel.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -87,9 +87,9 @@ export default function Auth() {
                   </p>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/80 p-4">
-                  <p className="text-sm font-bold text-foreground">Storage por conta</p>
+                  <p className="text-sm font-bold text-foreground">Dados isolados no banco</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Os dados ficam no `localStorage`, isolados por usuário no navegador.
+                    Cada conta lê e grava apenas os próprios registros no banco de dados.
                   </p>
                 </div>
               </div>
@@ -105,7 +105,7 @@ export default function Auth() {
               <CardHeader className="space-y-3">
                 <CardTitle className="text-2xl font-bold">Entrar ou criar conta</CardTitle>
                 <CardDescription>
-                  Use seu email para carregar apenas os seus dados locais.
+                  Use seu email para acessar os dados gravados no Neon.
                 </CardDescription>
               </CardHeader>
               <CardContent>

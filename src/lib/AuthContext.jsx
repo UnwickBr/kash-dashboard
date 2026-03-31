@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState({ mode: "github-pages-static" });
+  const [appPublicSettings, setAppPublicSettings] = useState({ mode: "vercel-neon" });
 
   const refreshSession = async () => {
     if (!base44.auth.getToken()) {
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setAuthError({
         type: error.status === 401 ? "auth_required" : "unknown",
-        message: error.message || "Falha ao carregar sessão local.",
+        message: error.message || "Falha ao carregar sessão.",
       });
     } finally {
       setIsLoadingAuth(false);

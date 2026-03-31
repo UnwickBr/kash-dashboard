@@ -1,33 +1,43 @@
 **Kash Dashboard**
 
-Projeto React/Vite ajustado para rodar localmente e publicar no GitHub Pages.
+Projeto React/Vite com frontend estático e backend serverless na Vercel usando Neon como banco de dados.
 
-**Como rodar**
+**Stack**
 
-1. Entre na pasta do projeto.
-2. Use Node `18.16.1` ou superior.
-3. Rode `npm install`.
-4. Rode `npm run dev`.
+- Frontend: Vite + React
+- Backend: Vercel Functions em `api/`
+- Banco: Neon PostgreSQL
 
-**GitHub Pages**
+**Pré-requisitos**
 
-- O projeto usa `HashRouter`, então as rotas funcionam em hospedagem estática.
-- O workflow de deploy está em `.github/workflows/deploy-pages.yml`.
-- Ao subir commits para `master`, o GitHub Actions pode publicar a versão do Pages.
+1. Use Node `20` ou superior.
+2. Rode `npm install`.
+3. Configure `DATABASE_URL` com a string de conexão do Neon.
 
-**Login e cadastro**
+Você pode copiar `.env.example` para `.env` em ambiente local.
 
-- O usuário precisa criar conta ou fazer login antes de entrar no dashboard.
-- A primeira conta criada vira admin.
-- As demais entram como usuário comum.
+**Desenvolvimento**
 
-**Persistência**
+- `npm run dev`: sobe o frontend Vite
+- `npm run dev:vercel`: sobe o projeto completo com as functions da Vercel
 
-- No GitHub Pages não existe backend nem escrita em arquivos do repositório em runtime.
-- Por isso, os dados ficam salvos no `localStorage` do navegador.
-- Cada conta usa um espaço isolado, então um usuário não vê os dados do outro no mesmo navegador.
+Para testar login, cadastro e persistência do Neon localmente, use `npm run dev:vercel`.
 
-**Limitação importante**
+**Deploy na Vercel**
 
-- Como o app é estático no GitHub Pages, os dados não são compartilhados entre navegadores ou dispositivos.
-- Se limpar o armazenamento do navegador, os dados locais dessa instalação são perdidos.
+1. Importe o repositório na Vercel.
+2. Configure a variável `DATABASE_URL`.
+3. Faça o deploy.
+
+**Banco de dados**
+
+O projeto cria/usa estas estruturas:
+- `users`
+- `sessions`
+- `entity_records`
+
+O SQL de referência está em `neon/schema.sql`.
+
+**Observação**
+
+No deploy final, o frontend não acessa o Neon diretamente. As credenciais ficam protegidas nas functions da Vercel, e o navegador fala apenas com `/api`.

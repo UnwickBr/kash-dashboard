@@ -1,0 +1,379 @@
+PASSO A PASSO VERCEL + NEONDB
+Projeto: Kash Dashboard
+
+Leia isto na ordem.
+Nao pule etapa.
+Se uma etapa der errado, pare nela e resolva antes de continuar.
+
+==================================================
+1. O QUE VOCE PRECISA ENTENDER ANTES DE TUDO
+==================================================
+
+Este projeto agora funciona assim:
+
+1. O frontend e o site que o usuario abre.
+2. A Vercel roda as rotas /api no servidor.
+3. Essas rotas /api falam com o NeonDB.
+4. O navegador NAO fala direto com o banco.
+5. A string DATABASE_URL fica escondida na Vercel.
+
+Traduzindo:
+
+- GitHub guarda o codigo
+- Vercel publica o projeto
+- Neon guarda os dados
+
+==================================================
+2. PREPARAR O NEONDB
+==================================================
+
+2.1. Abra o site do Neon
+
+Link:
+https://console.neon.tech/
+
+2.2. Crie uma conta ou entre na conta existente
+
+2.3. Crie um projeto novo
+
+Quando pedir:
+- nome do projeto: use algo como kash-dashboard
+- Postgres version: pode deixar a padrao
+- region: escolha a mais proxima de voce ou da Vercel
+
+2.4. Depois que o projeto for criado, procure um botao chamado:
+
+- Connect
+ou
+- Connection Details
+
+2.5. Copie a connection string
+
+
+
+Ela parece com isso:
+
+postgresql://USUARIO:SENHA@HOST/DATABASE?sslmode=require
+
+postgresql://neondb_owner:npg_UmNY9lZTy4AL@ep-proud-sun-ac7comdh-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+Observacao importante:
+
+- Se houver opcao pooled connection, pode usar a pooled
+- Se nao souber qual usar, use a que o Neon mostrar primeiro no Connect
+
+2.6. Guarde essa string
+
+Voce vai usar ela como:
+
+DATABASE_URL
+
+==================================================
+3. CRIAR AS TABELAS NO NEON
+==================================================
+
+3.1. No projeto local, existe este arquivo:
+
+neon/schema.sql
+
+3.2. Abra o painel do Neon
+
+Procure o SQL Editor
+
+3.3. Copie TODO o conteudo do arquivo neon/schema.sql
+
+3.4. Cole no SQL Editor do Neon
+
+3.5. Execute
+
+Se der certo, o banco vai criar estas tabelas:
+
+- users
+- sessions
+- entity_records
+
+==================================================
+4. SUBIR O CODIGO PARA O GITHUB
+==================================================
+
+Se o codigo ja esta no GitHub, siga adiante.
+Se ainda nao estiver, use:
+
+git add .
+git commit -m "Prepare Vercel and Neon integration"
+git push
+
+Repositorio atual:
+https://github.com/UnwickBr/kash-dashboard
+
+==================================================
+5. IMPORTAR O PROJETO NA VERCEL
+==================================================
+
+5.1. Abra:
+
+https://vercel.com/dashboard
+
+5.2. Clique em:
+
+- Add New...
+ou
+- New Project
+
+5.3. Escolha Import Git Repository
+
+5.4. Selecione o repositorio:
+
+UnwickBr/kash-dashboard
+
+5.5. Clique em Import
+
+==================================================
+6. CONFIGURAR O PROJETO NA VERCEL
+==================================================
+
+Na tela de importacao, veja estes pontos:
+
+6.1. Framework preset
+
+Se aparecer Vite, otimo.
+Se nao aparecer, selecione Vite manualmente.
+
+6.2. Root directory
+
+Deixe vazio ou padrao, porque o projeto esta na raiz.
+
+6.3. Build command
+
+Deixe o padrao se a Vercel detectar:
+
+npm run build
+
+6.4. Output directory
+
+Deixe:
+
+dist
+
+==================================================
+7. ADICIONAR A VARIAVEL DE AMBIENTE
+==================================================
+
+Essa e a parte mais importante.
+Sem isso o projeto NAO consegue falar com o Neon.
+
+7.1. Na tela do projeto na Vercel, procure:
+
+- Environment Variables
+
+7.2. Adicione:
+
+Name:
+DATABASE_URL
+
+Value:
+cole exatamente a connection string do Neon
+
+7.3. Marque essa variavel para:
+
+- Production
+- Preview
+- Development
+
+Se a Vercel mostrar essas tres opcoes, marque as tres.
+
+7.4. Salve
+
+==================================================
+8. ESCOLHER A VERSAO DO NODE NA VERCEL
+==================================================
+
+Este projeto agora usa Node 20+.
+
+8.1. Na Vercel, abra o projeto
+
+8.2. Va em:
+
+Settings > General
+
+8.3. Procure Node.js Version
+
+8.4. Escolha Node 20
+ou uma versao superior compativel
+
+==================================================
+9. FAZER O PRIMEIRO DEPLOY
+==================================================
+
+9.1. Clique em Deploy
+
+9.2. Espere terminar
+
+Se tudo der certo, a Vercel vai gerar uma URL parecida com:
+
+https://kash-dashboard-xxxxx.vercel.app
+
+==================================================
+10. SE DER ERRO NO DEPLOY
+==================================================
+
+Olhe primeiro estas coisas:
+
+10.1. DATABASE_URL foi criada?
+
+Se nao foi, o backend quebra.
+
+10.2. O schema.sql foi executado no Neon?
+
+Se nao foi, a aplicacao pode tentar usar tabelas que nao existem.
+
+10.3. Node da Vercel esta em 20 ou superior?
+
+Se estiver abaixo disso, o pacote do Neon pode falhar.
+
+10.4. A string do banco esta correta?
+
+Cheque:
+
+- usuario
+- senha
+- host
+- database
+- sslmode=require
+
+==================================================
+11. TESTAR O SISTEMA PUBLICADO
+==================================================
+
+Depois do deploy:
+
+11.1. Abra a URL da Vercel
+
+11.2. Crie uma conta nova
+
+Importante:
+- a primeira conta criada vira admin
+
+11.3. Entre no dashboard
+
+11.4. Crie um registro qualquer, por exemplo:
+
+- uma transacao
+- um orcamento
+- um lembrete
+
+11.5. Atualize a pagina
+
+11.6. Veja se os dados continuam la
+
+Se continuarem, a gravacao no Neon esta funcionando.
+
+==================================================
+12. TESTAR SE OS USUARIOS FICAM ISOLADOS
+==================================================
+
+12.1. Crie um usuario A
+
+12.2. Cadastre alguns dados
+
+12.3. Saia
+
+12.4. Crie um usuario B
+
+12.5. Entre com o usuario B
+
+12.6. Confirme que ele nao ve os dados do usuario A
+
+Se nao vir, o isolamento por usuario esta funcionando.
+
+==================================================
+13. COMO TESTAR LOCALMENTE DEPOIS
+==================================================
+
+Se quiser testar localmente com a Vercel simulando as functions:
+
+13.1. Na raiz do projeto, crie um arquivo .env
+
+13.2. Coloque dentro:
+
+DATABASE_URL=sua-string-do-neon
+
+13.3. Rode:
+
+npm install
+
+13.4. Rode:
+
+npm run dev:vercel
+
+13.5. Abra a URL local que a Vercel mostrar
+
+Nao use npm run dev para testar as rotas /api.
+Para testar backend + frontend juntos, use:
+
+npm run dev:vercel
+
+==================================================
+14. COMANDOS UTEIS
+==================================================
+
+Instalar dependencias:
+npm install
+
+Rodar frontend simples:
+npm run dev
+
+Rodar com Vercel Functions localmente:
+npm run dev:vercel
+
+Gerar build:
+npm run build
+
+==================================================
+15. CHECKLIST FINAL
+==================================================
+
+Se quiser validar sem pensar muito, marque item por item:
+
+[ ] Criei o projeto no Neon
+[ ] Copiei a DATABASE_URL
+[ ] Rodei o schema.sql no Neon
+[ ] Importei o repo na Vercel
+[ ] Configurei DATABASE_URL na Vercel
+[ ] Configurei Node 20 na Vercel
+[ ] Fiz o deploy
+[ ] Abri a URL publicada
+[ ] Criei uma conta
+[ ] Entrei no dashboard
+[ ] Criei dados
+[ ] Atualizei a pagina e os dados continuaram la
+
+==================================================
+16. LINKS OFICIAIS
+==================================================
+
+Neon - conectar ao banco:
+https://neon.com/docs/get-started-with-neon/connect-neon
+
+Vercel - variaveis de ambiente:
+https://vercel.com/docs/projects/environment-variables
+
+Vercel - importar projeto do GitHub:
+https://vercel.com/docs/deployments/git/vercel-for-github
+
+==================================================
+17. RESUMO SUPER CURTO
+==================================================
+
+Se quiser a versao de 20 segundos:
+
+1. Crie banco no Neon
+2. Copie DATABASE_URL
+3. Rode neon/schema.sql no Neon
+4. Importe o repo na Vercel
+5. Adicione DATABASE_URL nas Environment Variables
+6. Configure Node 20
+7. Deploy
+8. Teste cadastro/login
+
+Fim.
