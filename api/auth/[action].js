@@ -14,10 +14,12 @@ import {
   verifyGoogleCredential,
   verifyPassword,
 } from "../_lib/auth.js";
+import { asaasRequest, buildCheckoutUrl, ensureAsaasCustomer } from "../_lib/asaas.js";
 import { issueEmailVerificationToken, sendVerificationEmail } from "../_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "../_lib/utils.js";
 
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+const toAsaasDateTime = (value) => value.toISOString().slice(0, 19).replace("T", " ");
 
 const handlers = {
   async register(req, res) {
@@ -191,6 +193,72 @@ const handlers = {
     `;
 
     return sendJson(res, 200, { success: true, user: sanitizeUser(rows[0]) });
+  },
+
+  async "create-premium-checkout"(req, res) {
+    if (req.method !== "POST") {
+      return sendJson(res, 405, { message: "Method not allowed" });
+    }
+
+    const user = await requireAuth(req);
+
+    if (user.has_premium_access) {
+      const error = new Error("Sua conta ja possui acesso premium ativo.");
+      error.status = 400;
+      throw error;
+    }
+
+    await ensureSchema();
+    const sql = getSql();
+    await ensureAsaasCustomer(user);
+    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const now = new Date();
+    const nextDueDate = new Date(now.getTime() + 5 * 60 * 1000);
+    const endDate = new Date(now.getTime() + 10 * 365 * 24 * 60 * 60 * 1000);
+    const checkout = await asaasRequest("/checkouts", {
+      method: "POST",
+      body: {
+        billingTypes: ["CREDIT_CARD", "PIX"],
+        chargeTypes: ["RECURRENT"],
+        minutesToExpire: 60,
+        callback: appUrl
+          ? {
+              successUrl: `${appUrl}/#/premium?checkout=success`,
+              cancelUrl: `${appUrl}/#/premium?checkout=cancel`,
+              expiredUrl: `${appUrl}/#/premium?checkout=expired`,
+            }
+          : undefined,
+        items: [
+          {
+            name: "Kash Premium",
+            description: "Assinatura mensal do Kash Premium",
+            quantity: 1,
+            value: 20,
+          },
+        ],
+        customerData: {
+          name: user.full_name,
+          email: user.email,
+        },
+        subscription: {
+          cycle: "MONTHLY",
+          nextDueDate: toAsaasDateTime(nextDueDate),
+          endDate: toAsaasDateTime(endDate),
+        },
+      },
+    });
+
+    await sql`
+      UPDATE users
+      SET asaas_checkout_id = ${checkout.id}
+      WHERE id = ${user.id}
+    `;
+
+    return sendJson(res, 200, {
+      success: true,
+      checkoutId: checkout.id,
+      checkoutUrl: checkout.url || buildCheckoutUrl(checkout.id),
+    });
   },
 
   async "resend-verification"(req, res) {

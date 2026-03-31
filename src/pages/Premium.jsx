@@ -28,9 +28,10 @@ const features = [
 ];
 
 export default function Premium() {
-  const { currentUser, cancelSubscription } = useAuth();
+  const { currentUser, cancelSubscription, createPremiumCheckout } = useAuth();
   const [loadingCancel, setLoadingCancel] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
 
   const isPremium = Boolean(currentUser?.has_premium_access);
   const cancellationScheduled = Boolean(currentUser?.subscription_canceled_at && currentUser?.subscription_expires_at);
@@ -57,6 +58,21 @@ export default function Premium() {
       });
     } finally {
       setLoadingCancel(false);
+    }
+  };
+
+  const handleStartCheckout = async () => {
+    setLoadingCheckout(true);
+    try {
+      const result = await createPremiumCheckout();
+      window.location.href = result.checkoutUrl;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Nao foi possivel iniciar a assinatura",
+        description: error.message || "Tente novamente em instantes.",
+      });
+      setLoadingCheckout(false);
     }
   };
 
@@ -132,7 +148,11 @@ export default function Premium() {
             <span className="text-lg opacity-70">/mes</span>
           </div>
           <p className="text-sm opacity-80">Cancele quando quiser. Sem compromisso.</p>
-          <Button className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-bold text-base h-12">
+          <Button
+            className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-bold text-base h-12"
+            onClick={handleStartCheckout}
+            disabled={loadingCheckout}
+          >
             <Crown className="h-4 w-4 mr-2" /> Assinar Agora
           </Button>
           <p className="text-xs opacity-60">Pagamento seguro · renovacao automatica mensal</p>

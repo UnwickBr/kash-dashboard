@@ -113,6 +113,8 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
+  const createPremiumCheckout = async () => base44.auth.createPremiumCheckout();
+
   const navigateToLogin = () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -136,6 +138,7 @@ export const AuthProvider = ({ children }) => {
         updateProfile,
         changePassword,
         cancelSubscription,
+        createPremiumCheckout,
         logout,
         navigateToLogin,
         checkAppState: refreshSession,

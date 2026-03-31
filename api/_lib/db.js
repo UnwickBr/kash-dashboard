@@ -38,6 +38,9 @@ export const ensureSchema = async () => {
           subscription_started_at TIMESTAMPTZ,
           subscription_expires_at TIMESTAMPTZ,
           subscription_canceled_at TIMESTAMPTZ,
+          asaas_customer_id TEXT,
+          asaas_subscription_id TEXT,
+          asaas_checkout_id TEXT,
           password_hash TEXT NOT NULL,
           password_salt TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -54,6 +57,9 @@ export const ensureSchema = async () => {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_started_at TIMESTAMPTZ`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_canceled_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_customer_id TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_subscription_id TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_checkout_id TEXT`;
 
       await sql`
         CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx

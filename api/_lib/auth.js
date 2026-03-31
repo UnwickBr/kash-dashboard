@@ -69,6 +69,9 @@ export const sanitizeUser = (user) => ({
   subscription_started_at: user.subscription_started_at,
   subscription_expires_at: user.subscription_expires_at,
   subscription_canceled_at: user.subscription_canceled_at,
+  asaas_customer_id: user.asaas_customer_id,
+  asaas_subscription_id: user.asaas_subscription_id,
+  asaas_checkout_id: user.asaas_checkout_id,
   has_premium_access: hasPremiumAccess(user),
   created_date: user.created_at || user.created_date,
 });
@@ -112,6 +115,9 @@ export const getUserFromRequest = async (req) => {
       u.subscription_started_at,
       u.subscription_expires_at,
       u.subscription_canceled_at,
+      u.asaas_customer_id,
+      u.asaas_subscription_id,
+      u.asaas_checkout_id,
       u.created_at
     FROM sessions s
     INNER JOIN users u ON u.id = s.user_id
