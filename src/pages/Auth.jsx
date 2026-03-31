@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Database, LockKeyhole, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,34 @@ import { Button } from "@/components/ui/button";
 
 const loginInitialState = { email: "", password: "" };
 const registerInitialState = { fullName: "", email: "", password: "", confirmPassword: "" };
+
+function PasswordField({ label, placeholder, value, onChange }) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          type={visible ? "text" : "password"}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          className="pr-11"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Auth() {
   const { login, register } = useAuth();
@@ -67,29 +95,35 @@ export default function Auth() {
           >
             <div className="max-w-xl space-y-6">
               <div className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-                <Database className="h-4 w-4" />
-                Autenticação e dados via Vercel + Neon
+                <ShieldCheck className="h-4 w-4" />
+                Acesso seguro e experiência simplificada
               </div>
               <div className="space-y-4">
                 <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
-                  Seu painel financeiro com conta individual e banco real.
+                  Organize sua vida financeira com clareza e confiança.
                 </h1>
                 <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-                  Cada usuário entra com email e senha, e os dados ficam guardados no Neon com acesso
-                  mediado pelas functions da Vercel.
+                  Acompanhe transações, metas, orçamentos e lembretes em um painel pensado para manter
+                  tudo centralizado, simples e profissional.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-border bg-background/80 p-4">
-                  <p className="text-sm font-bold text-foreground">Cadastro antes da entrada</p>
+                  <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Visão completa do seu fluxo
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    O acesso ao app passa por conta e senha antes de abrir qualquer rota protegida.
+                    Tenha receitas, despesas, metas e compromissos reunidos em um só lugar.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-border bg-background/80 p-4">
-                  <p className="text-sm font-bold text-foreground">Dados isolados no banco</p>
+                  <p className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    Acesso pessoal à sua conta
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Cada conta lê e grava apenas os próprios registros no banco de dados.
+                    Entre com segurança para acompanhar seus dados com praticidade no dia a dia.
                   </p>
                 </div>
               </div>
@@ -105,7 +139,7 @@ export default function Auth() {
               <CardHeader className="space-y-3">
                 <CardTitle className="text-2xl font-bold">Entrar ou criar conta</CardTitle>
                 <CardDescription>
-                  Use seu email para acessar os dados gravados no Neon.
+                  Acesse seu painel e continue de onde parou.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -133,16 +167,12 @@ export default function Auth() {
                           required
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>Senha</Label>
-                        <Input
-                          type="password"
-                          placeholder="Sua senha"
-                          value={loginForm.password}
-                          onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
-                          required
-                        />
-                      </div>
+                      <PasswordField
+                        label="Senha"
+                        placeholder="Sua senha"
+                        value={loginForm.password}
+                        onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+                      />
                       <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading}>
                         {loading ? "Entrando..." : "Entrar"}
                       </Button>
@@ -171,26 +201,18 @@ export default function Auth() {
                         />
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label>Senha</Label>
-                          <Input
-                            type="password"
-                            placeholder="Mínimo 6 caracteres"
-                            value={registerForm.password}
-                            onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Confirmar senha</Label>
-                          <Input
-                            type="password"
-                            placeholder="Repita a senha"
-                            value={registerForm.confirmPassword}
-                            onChange={(event) => setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))}
-                            required
-                          />
-                        </div>
+                        <PasswordField
+                          label="Senha"
+                          placeholder="Mínimo 6 caracteres"
+                          value={registerForm.password}
+                          onChange={(event) => setRegisterForm((current) => ({ ...current, password: event.target.value }))}
+                        />
+                        <PasswordField
+                          label="Confirmar senha"
+                          placeholder="Repita a senha"
+                          value={registerForm.confirmPassword}
+                          onChange={(event) => setRegisterForm((current) => ({ ...current, confirmPassword: event.target.value }))}
+                        />
                       </div>
                       <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading}>
                         {loading ? "Criando conta..." : "Criar conta"}
