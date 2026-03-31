@@ -15,21 +15,133 @@ import {
   LogOut,
   UserRound,
   Lock,
+  CircleHelp,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import kashLogo from "@/assets/kash-logo.png";
 
 const navItems = [
-  { path: "/", label: "Painel", icon: LayoutDashboard },
-  { path: "/transacoes", label: "Transações", icon: ArrowLeftRight },
-  { path: "/orcamentos", label: "Orçamentos", icon: Target, premiumOnly: true },
-  { path: "/poupanca", label: "Poupança", icon: PiggyBank, premiumOnly: true },
-  { path: "/lista-compras", label: "Lista de Compras", icon: ShoppingCart, premiumOnly: true },
-  { path: "/lembretes", label: "Lembretes", icon: Bell, premiumOnly: true },
-  { path: "/premium", label: "Premium", icon: Crown },
+  {
+    path: "/",
+    label: "Painel",
+    icon: LayoutDashboard,
+    description: "Veja seu resumo financeiro, saldo do período, gráficos e movimentações recentes.",
+  },
+  {
+    path: "/transacoes",
+    label: "Transações",
+    icon: ArrowLeftRight,
+    description: "Cadastre, filtre e acompanhe todas as suas receitas e despesas.",
+  },
+  {
+    path: "/orcamentos",
+    label: "Orçamentos",
+    icon: Target,
+    premiumOnly: true,
+    description: "Defina limites por categoria e acompanhe quanto ainda pode gastar.",
+  },
+  {
+    path: "/poupanca",
+    label: "Poupança",
+    icon: PiggyBank,
+    premiumOnly: true,
+    description: "Crie metas de economia e acompanhe sua evolução ao longo do tempo.",
+  },
+  {
+    path: "/lista-compras",
+    label: "Lista de Compras",
+    icon: ShoppingCart,
+    premiumOnly: true,
+    description: "Organize itens e acompanhe listas de compra pendentes ou concluídas.",
+  },
+  {
+    path: "/lembretes",
+    label: "Lembretes",
+    icon: Bell,
+    premiumOnly: true,
+    description: "Cadastre contas a vencer e sincronize lembretes com o Google Agenda.",
+  },
+  {
+    path: "/premium",
+    label: "Premium",
+    icon: Crown,
+    description: "Veja benefícios, status da assinatura e opções do plano premium.",
+  },
 ];
+
+const profileItem = {
+  path: "/meu-perfil",
+  label: "Meu perfil",
+  icon: UserRound,
+  description: "Atualize seus dados pessoais, data de nascimento e senha da conta.",
+};
+
+const adminItem = {
+  path: "/admin",
+  label: "Admin",
+  icon: Shield,
+  description: "Gerencie usuários, permissões e informações administrativas do sistema.",
+};
+
+function NavInfoButton({ label, description, active }) {
+  return (
+    <Popover>
+      <TooltipProvider delayDuration={120}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
+                  active
+                    ? "text-primary-foreground/80 hover:bg-primary-foreground/10"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+                aria-label={`Saiba mais sobre ${label}`}
+              >
+                <CircleHelp className="h-3.5 w-3.5" />
+              </button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-64 text-xs leading-5">
+            {description}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <PopoverContent align="end" side="right" className="max-w-72 rounded-xl">
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function NavLinkItem({ item, active, locked, onClick, compact = false }) {
+  return (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+      } ${compact ? "min-h-12 rounded-xl" : ""}`}
+    >
+      <item.icon className="h-4 w-4 shrink-0" />
+      <span className="flex-1">{item.label}</span>
+      {locked ? <Lock className="h-3.5 w-3.5 shrink-0 text-amber-500" /> : null}
+      <NavInfoButton label={item.label} description={item.description} active={active} />
+    </Link>
+  );
+}
 
 export default function Layout() {
   const location = useLocation();
@@ -91,39 +203,22 @@ export default function Layout() {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {navItems.map((item) => {
-            const active = location.pathname === item.path;
-            const locked = item.premiumOnly && !isPremiumUser;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
-              >
-                <item.icon className="h-4 w-4" />
-                <span className="flex-1">{item.label}</span>
-                {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : null}
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <NavLinkItem
+              key={item.path}
+              item={item}
+              active={location.pathname === item.path}
+              locked={item.premiumOnly && !isPremiumUser}
+            />
+          ))}
         </nav>
 
         {currentUser?.role === "admin" && (
-          <Link
-            to="/admin"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-              location.pathname === "/admin"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-            }`}
-          >
-            <Shield className="h-4 w-4" />
-            Admin
-          </Link>
+          <NavLinkItem
+            item={adminItem}
+            active={location.pathname === adminItem.path}
+            locked={false}
+          />
         )}
 
         <div className="pt-4 border-t border-border space-y-4">
@@ -132,15 +227,20 @@ export default function Layout() {
             <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
           </div>
           <Link
-            to="/meu-perfil"
+            to={profileItem.path}
             className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-              location.pathname === "/meu-perfil"
+              location.pathname === profileItem.path
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
             }`}
           >
-            <UserRound className="h-4 w-4" />
-            Meu perfil
+            <profileItem.icon className="h-4 w-4" />
+            <span>{profileItem.label}</span>
+            <NavInfoButton
+              label={profileItem.label}
+              description={profileItem.description}
+              active={location.pathname === profileItem.path}
+            />
           </Link>
           <button
             type="button"
@@ -188,51 +288,41 @@ export default function Layout() {
               className="lg:hidden fixed top-[calc(4.5rem+env(safe-area-inset-top))] left-3 right-3 z-40 rounded-2xl bg-card border border-border p-3 shadow-lg"
             >
               <nav className="flex flex-col gap-1">
-                {navItems.map((item) => {
-                  const active = location.pathname === item.path;
-                  const locked = item.premiumOnly && !isPremiumUser;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                        active
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span className="flex-1">{item.label}</span>
-                      {locked ? <Lock className="h-3.5 w-3.5 text-amber-500" /> : null}
-                    </Link>
-                  );
-                })}
+                {navItems.map((item) => (
+                  <NavLinkItem
+                    key={item.path}
+                    item={item}
+                    active={location.pathname === item.path}
+                    locked={item.premiumOnly && !isPremiumUser}
+                    onClick={() => setMobileOpen(false)}
+                    compact
+                  />
+                ))}
                 <Link
-                  to="/meu-perfil"
+                  to={profileItem.path}
                   onClick={() => setMobileOpen(false)}
                   className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    location.pathname === "/meu-perfil"
+                    location.pathname === profileItem.path
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
-                  <UserRound className="h-4 w-4" />
-                  Meu perfil
+                  <profileItem.icon className="h-4 w-4" />
+                  <span className="flex-1">{profileItem.label}</span>
+                  <NavInfoButton
+                    label={profileItem.label}
+                    description={profileItem.description}
+                    active={location.pathname === profileItem.path}
+                  />
                 </Link>
                 {currentUser?.role === "admin" && (
-                  <Link
-                    to="/admin"
+                  <NavLinkItem
+                    item={adminItem}
+                    active={location.pathname === adminItem.path}
+                    locked={false}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                      location.pathname === "/admin"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <Shield className="h-4 w-4" />
-                    Admin
-                  </Link>
+                    compact
+                  />
                 )}
                 <button
                   type="button"
