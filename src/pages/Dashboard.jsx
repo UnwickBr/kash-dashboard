@@ -109,7 +109,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,23 +121,21 @@ export default function Dashboard() {
         <AddTransactionDialog onSuccess={loadData} />
       </motion.div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Saldo do Mês" value={formatCurrency(stats.balance)} icon={Wallet} />
+        <StatCard title="Saldo do Mes" value={formatCurrency(stats.balance)} icon={Wallet} />
         <StatCard title="Receitas" value={formatCurrency(stats.income)} icon={TrendingUp} />
         <StatCard title="Despesas" value={formatCurrency(stats.expenses)} icon={TrendingDown} />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[360px]"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Gastos por Categoria</h3>
-          <SpendingChart data={spendingByCategory} />
+          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Receitas vs Despesas</h3>
+          <MonthlyChart data={monthlyData} />
         </motion.div>
 
         <motion.div
@@ -147,39 +144,47 @@ export default function Dashboard() {
           transition={{ delay: 0.2 }}
           className="bg-card rounded-2xl border border-border p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Receitas vs Despesas</h3>
-          <MonthlyChart data={monthlyData} />
+          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Gastos por Categoria</h3>
+          <SpendingChart data={spendingByCategory} />
         </motion.div>
       </div>
 
-      {/* Future installments preview */}
       {futureInstallments.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Parcelas nos Próximos Meses</h3>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+        >
+          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Parcelas nos Proximos Meses</h3>
           <div className="flex gap-3 flex-wrap">
             {futureInstallments.map((item) => (
               <div key={item.month} className="flex-1 min-w-[100px] bg-secondary/40 rounded-xl p-3">
                 <p className="text-xs font-semibold text-muted-foreground capitalize">{item.month}</p>
-                <p className="text-base font-bold text-foreground mt-1">R$ {item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+                <p className="text-base font-bold text-foreground mt-1">
+                  R$ {item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                </p>
               </div>
             ))}
           </div>
         </motion.div>
       )}
 
-      {/* Recent Transactions */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="bg-card rounded-2xl border border-border p-5 sm:p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Transações Recentes</h3>
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Transacoes Recentes</h3>
           <Link to="/transacoes" className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
             Ver todas <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         {recentTransactions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhuma transação registrada. Comece adicionando uma!
+            Nenhuma transacao registrada. Comece adicionando uma!
           </p>
         ) : (
           <div>
