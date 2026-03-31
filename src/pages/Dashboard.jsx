@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState("current");
+  const firstName = (currentUser?.full_name || "usuario").trim().split(/\s+/)[0];
 
   const loadData = async () => {
     setLoading(true);
@@ -136,6 +137,13 @@ export default function Dashboard() {
 
   const recentTransactions = filteredTransactions.slice(0, 5);
   const formatCurrency = (value) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12
+      ? "Bom dia"
+      : currentHour < 18
+        ? "Boa tarde"
+        : "Boa noite";
 
   if (loading) {
     return (
@@ -154,6 +162,9 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Painel Financeiro</h1>
+          <p className="text-sm sm:text-base font-medium text-primary mt-1">
+            {greeting}, {firstName}
+          </p>
           <p className="text-sm text-muted-foreground mt-1 capitalize">
             Dados salvos de {selectedMonthLabel}
           </p>
