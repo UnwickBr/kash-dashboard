@@ -19,6 +19,7 @@ import Premium from "./pages/Premium";
 import Admin from "./pages/Admin";
 import Profile from "./pages/Profile";
 import VerifyEmail from "./pages/VerifyEmail";
+import Contact from "./pages/Contact";
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
@@ -83,6 +84,7 @@ const AuthenticatedApp = () => {
           }
         />
         <Route path="/premium" element={<Premium />} />
+        <Route path="/contato" element={<Contact />} />
         <Route path="/meu-perfil" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<PageNotFound />} />

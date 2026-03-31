@@ -76,6 +76,14 @@ const createEntityApi = (entityName) => ({
 
 export const base44 = {
   entities: Object.fromEntries(ENTITY_NAMES.map((name) => [name, createEntityApi(name)])),
+  support: {
+    async sendContact(payload) {
+      return request("/api/contact", {
+        method: "POST",
+        body: payload,
+      });
+    },
+  },
   auth: {
     async register(payload) {
       return request("/api/auth/register", {

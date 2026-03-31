@@ -16,6 +16,7 @@ import {
   UserRound,
   Lock,
   CircleHelp,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
@@ -78,6 +79,13 @@ const profileItem = {
   label: "Meu perfil",
   icon: UserRound,
   description: "Atualize seus dados pessoais, data de nascimento e senha da conta.",
+};
+
+const contactItem = {
+  path: "/contato",
+  label: "Contato",
+  icon: Mail,
+  description: "Envie dúvidas, críticas, sugestões e pedidos de suporte direto para nossa equipe.",
 };
 
 const adminItem = {
@@ -227,6 +235,22 @@ export default function Layout() {
             <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
           </div>
           <Link
+            to={contactItem.path}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+              location.pathname === contactItem.path
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <contactItem.icon className="h-4 w-4" />
+            <span>{contactItem.label}</span>
+            <NavInfoButton
+              label={contactItem.label}
+              description={contactItem.description}
+              active={location.pathname === contactItem.path}
+            />
+          </Link>
+          <Link
             to={profileItem.path}
             className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
               location.pathname === profileItem.path
@@ -298,6 +322,23 @@ export default function Layout() {
                     compact
                   />
                 ))}
+                <Link
+                  to={contactItem.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    location.pathname === contactItem.path
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <contactItem.icon className="h-4 w-4" />
+                  <span className="flex-1">{contactItem.label}</span>
+                  <NavInfoButton
+                    label={contactItem.label}
+                    description={contactItem.description}
+                    active={location.pathname === contactItem.path}
+                  />
+                </Link>
                 <Link
                   to={profileItem.path}
                   onClick={() => setMobileOpen(false)}

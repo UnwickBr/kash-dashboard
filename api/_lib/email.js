@@ -139,3 +139,25 @@ export const sendReminderDigestEmail = async (user, remindersByStage) => {
     `,
   });
 };
+
+export const sendSupportEmail = async ({ name, email, subject, message }) => {
+  const resend = getResend();
+  const from = process.env.RESEND_FROM_EMAIL || "Kash Dashboard <onboarding@resend.dev>";
+  const supportEmail = "kashdashboard@gmail.com";
+
+  await resend.emails.send({
+    from,
+    to: supportEmail,
+    replyTo: email,
+    subject: `[Contato Kash] ${subject}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+        <h2 style="margin-bottom:12px">Nova mensagem de contato</h2>
+        <p><strong>Nome:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Assunto:</strong> ${subject}</p>
+        <div style="margin-top:20px;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;white-space:pre-wrap">${message}</div>
+      </div>
+    `,
+  });
+};
