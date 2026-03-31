@@ -360,6 +360,7 @@ export default function Auth() {
                         <div className="space-y-2">
                           <Label>Data de nascimento</Label>
                           <Input
+                            type="text"
                             inputMode="numeric"
                             placeholder="DD/MM/AAAA"
                             value={registerForm.birthDate}

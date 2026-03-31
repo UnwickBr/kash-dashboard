@@ -18,8 +18,18 @@ const formatDateInput = (value) => {
 
 const toDisplayDate = (value) => {
   if (!value) return "";
-  const parsedDate = parse(value, "yyyy-MM-dd", new Date());
-  return isValid(parsedDate) ? format(parsedDate, "dd/MM/yyyy") : "";
+  if (value instanceof Date) {
+    return isValid(value) ? format(value, "dd/MM/yyyy") : "";
+  }
+
+  const normalizedValue = String(value);
+  const directParse = parse(normalizedValue, "yyyy-MM-dd", new Date());
+  if (isValid(directParse)) {
+    return format(directParse, "dd/MM/yyyy");
+  }
+
+  const fallbackDate = new Date(normalizedValue);
+  return isValid(fallbackDate) ? format(fallbackDate, "dd/MM/yyyy") : "";
 };
 
 const toIsoDate = (value) => {
@@ -195,6 +205,7 @@ export default function Profile() {
                 <div className="space-y-2">
                   <Label>Data de nascimento</Label>
                   <Input
+                    type="text"
                     inputMode="numeric"
                     placeholder="DD/MM/AAAA"
                     value={profileForm.birthDate}
