@@ -149,6 +149,7 @@ export default function Contact() {
                     className="min-h-36"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">Mínimo de 5 caracteres.</p>
                 </div>
 
                 <Button type="submit" className="w-full rounded-xl" disabled={sending}>

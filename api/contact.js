@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     const subject = String(body.subject || "").trim();
     const message = String(body.message || "").trim();
 
-    if (name.length < 2 || !email || subject.length < 3 || message.length < 10) {
-      const error = new Error("Preencha nome, assunto e mensagem corretamente antes de enviar.");
+    if (name.length < 2 || !email || subject.length < 3 || message.length < 5) {
+      const error = new Error("Preencha nome, assunto e uma mensagem com pelo menos 5 caracteres.");
       error.status = 400;
       throw error;
     }
