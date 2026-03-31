@@ -53,26 +53,31 @@ const fetchCalendar = async (accessToken, path, options = {}) => {
 
 const getReminderEventPayload = (reminder) => {
   const dueDate = reminder.due_date;
-  const [year, month, day] = dueDate.split("-").map(Number);
-  const start = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  const end = new Date(Date.UTC(year, month - 1, day, 12, 30, 0));
+  const [hours, minutes] = String(reminder.reminder_time || "09:00").split(":").map(Number);
+  const startHour = Number.isFinite(hours) ? hours : 9;
+  const startMinute = Number.isFinite(minutes) ? minutes : 0;
+  const endHour = startMinute + 30 >= 60 ? (startHour + 1) % 24 : startHour;
+  const endMinute = (startMinute + 30) % 60;
+  const startDateTime = `${dueDate}T${String(startHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}:00`;
+  const endDateTime = `${dueDate}T${String(endHour).padStart(2, "0")}:${String(endMinute).padStart(2, "0")}:00`;
 
   return {
     summary: reminder.description,
     description: [
       reminder.category ? `Categoria: ${reminder.category}` : null,
       reminder.amount ? `Valor: R$ ${Number(reminder.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : null,
+      reminder.reminder_time ? `Horário do lembrete: ${reminder.reminder_time}` : null,
       reminder.recurrent ? "Recorrente: mensal" : null,
       "Criado pelo Kash Dashboard",
     ]
       .filter(Boolean)
       .join("\n"),
     start: {
-      dateTime: start.toISOString(),
+      dateTime: startDateTime,
       timeZone: GOOGLE_CALENDAR_TIME_ZONE,
     },
     end: {
-      dateTime: end.toISOString(),
+      dateTime: endDateTime,
       timeZone: GOOGLE_CALENDAR_TIME_ZONE,
     },
     reminders: {

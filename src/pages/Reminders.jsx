@@ -5,7 +5,7 @@ import { Plus, Bell, Trash2, Check, Calendar, Link as LinkIcon, Unlink } from "l
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { parseStoredDate } from "@/lib/date";
+import { formatDateInput, parseDisplayDate, parseStoredDate, toStoredDate } from "@/lib/date";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ import { toast } from "@/components/ui/use-toast";
 
 const categories = ["Moradia", "Cartão de Crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
 
-const emptyForm = { description: "", amount: "", due_date: "", category: "Outros", recurrent: false };
+const emptyForm = { description: "", amount: "", due_date: "", reminder_time: "09:00", category: "Outros", recurrent: false };
 
 export default function Reminders() {
   const { currentUser, checkAppState, disconnectGoogleCalendar, getGoogleCalendarConnectUrl } = useAuth();
@@ -38,6 +38,7 @@ export default function Reminders() {
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [dateInput, setDateInput] = useState("");
   const [calendarBusy, setCalendarBusy] = useState(false);
 
   const load = async () => {
@@ -99,13 +100,20 @@ export default function Reminders() {
     event.preventDefault();
     setSaving(true);
     try {
+      const parsedDate = parseDisplayDate(dateInput);
+      if (!parsedDate) {
+        throw new Error("Preencha o vencimento no formato DD/MM/AAAA.");
+      }
+
       await base44.entities.PaymentReminder.create({
         ...form,
+        due_date: toStoredDate(parsedDate),
         amount: form.amount ? parseFloat(form.amount) : null,
         paid: false,
       });
       setAddOpen(false);
       setForm(emptyForm);
+      setDateInput("");
       await load();
     } catch (error) {
       toast({
@@ -167,6 +175,18 @@ export default function Reminders() {
   const hasGoogleLogin = currentUser?.auth_provider === "google" || Boolean(currentUser?.google_sub);
   const hasCalendarConnection = Boolean(currentUser?.has_google_calendar_connection);
 
+  const handleDateChange = (value) => {
+    setDateInput(formatDateInput(value));
+  };
+
+  const handleAddDialogChange = (open) => {
+    setAddOpen(open);
+    if (!open) {
+      setForm(emptyForm);
+      setDateInput("");
+    }
+  };
+
   const handleConnectCalendar = async () => {
     setCalendarBusy(true);
     try {
@@ -220,7 +240,7 @@ export default function Reminders() {
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Lembretes</h1>
           <p className="text-sm text-muted-foreground mt-1">{pending.length} contas pendentes</p>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <Dialog open={addOpen} onOpenChange={handleAddDialogChange}>
           <DialogTrigger asChild>
             <Button className="gap-2 rounded-xl shadow-sm">
               <Plus className="h-4 w-4" /> Nova Conta
@@ -258,12 +278,24 @@ export default function Reminders() {
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</Label>
                   <Input
                     className="mt-1.5 rounded-xl"
-                    type="date"
-                    value={form.due_date}
-                    onChange={(event) => setForm({ ...form, due_date: event.target.value })}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="DD/MM/AAAA"
+                    value={dateInput}
+                    onChange={(event) => handleDateChange(event.target.value)}
                     required
                   />
                 </div>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Horário do lembrete</Label>
+                <Input
+                  className="mt-1.5 rounded-xl"
+                  type="time"
+                  value={form.reminder_time}
+                  onChange={(event) => setForm({ ...form, reminder_time: event.target.value })}
+                  required
+                />
               </div>
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
@@ -287,7 +319,7 @@ export default function Reminders() {
                 </div>
                 <Switch checked={form.recurrent} onCheckedChange={(value) => setForm({ ...form, recurrent: value })} />
               </div>
-              <Button type="submit" className="w-full rounded-xl" disabled={saving || !form.description || !form.due_date}>
+              <Button type="submit" className="w-full rounded-xl" disabled={saving || !form.description || dateInput.length !== 10 || !form.reminder_time}>
                 {saving ? "Salvando..." : "Adicionar Lembrete"}
               </Button>
             </form>
@@ -398,6 +430,7 @@ export default function Reminders() {
                             <Calendar className="h-3 w-3" />
                             {format(parseStoredDate(reminder.due_date), "dd/MM/yyyy")}
                           </p>
+                          {reminder.reminder_time && <span className="text-xs text-muted-foreground">· {reminder.reminder_time}</span>}
                           {reminder.category && <span className="text-xs text-muted-foreground">· {reminder.category}</span>}
                           {reminder.recurrent && <span className="text-xs text-muted-foreground">· 🔁 Mensal</span>}
                         </div>
@@ -451,7 +484,10 @@ export default function Reminders() {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold line-through truncate">{reminder.description}</p>
-                    <p className="text-xs text-muted-foreground">{format(parseStoredDate(reminder.due_date), "dd/MM/yyyy")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(parseStoredDate(reminder.due_date), "dd/MM/yyyy")}
+                      {reminder.reminder_time ? ` · ${reminder.reminder_time}` : ""}
+                    </p>
                   </div>
                   {reminder.amount > 0 && <p className="text-sm font-bold text-muted-foreground">R$ {reminder.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
                   <AlertDialog>
