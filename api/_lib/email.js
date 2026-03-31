@@ -79,3 +79,63 @@ export const sendVerificationEmail = async (req, user, token) => {
     `,
   });
 };
+
+export const sendReminderDigestEmail = async (user, remindersByStage) => {
+  const resend = getResend();
+  const appUrl = getAppBaseUrl();
+  const from = process.env.RESEND_FROM_EMAIL || "Kash Dashboard <onboarding@resend.dev>";
+  const remindersUrl = `${appUrl}/#/lembretes`;
+  const sections = [
+    { key: "upcoming", title: "Vencem amanhã" },
+    { key: "dueToday", title: "Vencem hoje" },
+    { key: "overdue", title: "Ficaram vencidos" },
+  ]
+    .map(({ key, title }) => {
+      const items = remindersByStage[key] || [];
+      if (!items.length) {
+        return "";
+      }
+
+      return `
+        <div style="margin:20px 0">
+          <h3 style="margin:0 0 10px;color:#111827">${title}</h3>
+          <ul style="padding-left:18px;margin:0;color:#374151">
+            ${items
+              .map(
+                (reminder) => `
+                  <li style="margin-bottom:8px">
+                    <strong>${reminder.description}</strong>
+                    ${reminder.amount ? ` · R$ ${Number(reminder.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : ""}
+                    · ${reminder.due_date}
+                    ${reminder.category ? ` · ${reminder.category}` : ""}
+                  </li>
+                `
+              )
+              .join("")}
+          </ul>
+        </div>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
+
+  await resend.emails.send({
+    from,
+    to: user.email,
+    subject: "Seus lembretes do Kash Dashboard",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#111827">
+        <h2 style="margin-bottom:12px">Lembretes financeiros do dia</h2>
+        <p>Olá, ${user.full_name || "usuário"}.</p>
+        <p>Encontramos lembretes que merecem sua atenção:</p>
+        ${sections}
+        <p style="margin:24px 0">
+          <a href="${remindersUrl}" style="background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:10px;display:inline-block;font-weight:700">
+            Abrir meus lembretes
+          </a>
+        </p>
+        <p>Se você já pagou alguma conta, marque como paga para manter tudo em dia.</p>
+      </div>
+    `,
+  });
+};

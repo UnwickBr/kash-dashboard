@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format, differenceInDays } from "date-fns";
+import { parseStoredDate } from "@/lib/date";
 
-const categories = ["Moradia", "Cartão de crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
+const categories = ["Moradia", "Cartão de Crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
 
 const emptyForm = { description: "", amount: "", due_date: "", category: "Outros", recurrent: false };
 
@@ -32,10 +33,12 @@ export default function Reminders() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [currentUser]);
+  useEffect(() => {
+    load();
+  }, [currentUser]);
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
+  const handleAdd = async (event) => {
+    event.preventDefault();
     setSaving(true);
     await base44.entities.PaymentReminder.create({
       ...form,
@@ -60,7 +63,7 @@ export default function Reminders() {
 
   const getUrgency = (reminder) => {
     if (reminder.paid) return "paid";
-    const days = differenceInDays(new Date(reminder.due_date), new Date());
+    const days = differenceInDays(parseStoredDate(reminder.due_date), new Date());
     if (days < 0) return "overdue";
     if (days <= 3) return "urgent";
     if (days <= 7) return "soon";
@@ -75,53 +78,87 @@ export default function Reminders() {
     ok: { color: "border-border", badge: "bg-blue-100 text-blue-700", label: "Pendente" },
   };
 
-  const pending = reminders.filter((r) => !r.paid);
-  const paid = reminders.filter((r) => r.paid);
-  const totalPending = pending.reduce((s, r) => s + (r.amount || 0), 0);
+  const pending = reminders.filter((reminder) => !reminder.paid);
+  const paid = reminders.filter((reminder) => reminder.paid);
+  const totalPending = pending.reduce((sum, reminder) => sum + (reminder.amount || 0), 0);
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Lembretes</h1>
           <p className="text-sm text-muted-foreground mt-1">{pending.length} contas pendentes</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 rounded-xl shadow-sm"><Plus className="h-4 w-4" /> Nova Conta</Button>
+            <Button className="gap-2 rounded-xl shadow-sm">
+              <Plus className="h-4 w-4" /> Nova Conta
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
-            <DialogHeader><DialogTitle className="text-lg font-bold">Nova Conta / Lembrete</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold">Nova Conta / Lembrete</DialogTitle>
+            </DialogHeader>
             <form onSubmit={handleAdd} className="space-y-4 mt-2">
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</Label>
-                <Input className="mt-1.5 rounded-xl" placeholder="Ex: Aluguel, Fatura Nubank..." value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+                <Input
+                  className="mt-1.5 rounded-xl"
+                  placeholder="Ex: Aluguel, Fatura Nubank..."
+                  value={form.description}
+                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor (R$)</Label>
-                  <Input className="mt-1.5 rounded-xl" type="number" step="0.01" min="0" placeholder="0,00"
-                    value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+                  <Input
+                    className="mt-1.5 rounded-xl"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={form.amount}
+                    onChange={(event) => setForm({ ...form, amount: event.target.value })}
+                  />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vencimento</Label>
-                  <Input className="mt-1.5 rounded-xl" type="date" value={form.due_date}
-                    onChange={(e) => setForm({ ...form, due_date: e.target.value })} required />
+                  <Input
+                    className="mt-1.5 rounded-xl"
+                    type="date"
+                    value={form.due_date}
+                    onChange={(event) => setForm({ ...form, due_date: event.target.value })}
+                    required
+                  />
                 </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                  <SelectTrigger className="mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
-                  <SelectContent>{categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
+                  <SelectTrigger className="mt-1.5 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
@@ -129,7 +166,7 @@ export default function Reminders() {
                   <p className="text-sm font-semibold">Recorrente (mensal)</p>
                   <p className="text-xs text-muted-foreground">Repete todo mês na mesma data</p>
                 </div>
-                <Switch checked={form.recurrent} onCheckedChange={(v) => setForm({ ...form, recurrent: v })} />
+                <Switch checked={form.recurrent} onCheckedChange={(value) => setForm({ ...form, recurrent: value })} />
               </div>
               <Button type="submit" className="w-full rounded-xl" disabled={saving || !form.description || !form.due_date}>
                 {saving ? "Salvando..." : "Adicionar Lembrete"}
@@ -139,21 +176,22 @@ export default function Reminders() {
         </Dialog>
       </motion.div>
 
-      {/* Info sobre notificações */}
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex gap-3">
         <Bell className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Notificações automáticas</p>
+          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lembretes por email</p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-            Para receber alertas por WhatsApp, SMS ou notificação no celular, instale o app e ative as notificações nas configurações do dispositivo. Alertas via mensagem requerem plano Premium.
+            O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer. Push, SMS e WhatsApp ainda não estão disponíveis.
           </p>
         </div>
       </div>
 
-      {/* Total pendente */}
       {pending.length > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className="bg-primary rounded-2xl p-5 flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="bg-primary rounded-2xl p-5 flex items-center justify-between"
+        >
           <div>
             <p className="text-xs font-semibold text-primary-foreground/70 uppercase tracking-wider">Total pendente</p>
             <p className="text-2xl font-bold text-primary-foreground">
@@ -161,8 +199,8 @@ export default function Reminders() {
             </p>
           </div>
           <div className="text-right text-primary-foreground/70 text-sm">
-            <p>{pending.filter(r => getUrgency(r) === "overdue").length} vencidas</p>
-            <p>{pending.filter(r => getUrgency(r) === "urgent").length} urgentes</p>
+            <p>{pending.filter((reminder) => getUrgency(reminder) === "overdue").length} vencidas</p>
+            <p>{pending.filter((reminder) => getUrgency(reminder) === "urgent").length} urgentes</p>
           </div>
         </motion.div>
       )}
@@ -179,31 +217,43 @@ export default function Reminders() {
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Pendentes ({pending.length})</p>
               <AnimatePresence>
-                {pending.map((r, i) => {
-                  const u = getUrgency(r);
-                  const cfg = urgencyConfig[u];
-                  const days = differenceInDays(new Date(r.due_date), new Date());
+                {pending.map((reminder, index) => {
+                  const urgency = getUrgency(reminder);
+                  const config = urgencyConfig[urgency];
+                  const days = differenceInDays(parseStoredDate(reminder.due_date), new Date());
+
                   return (
-                    <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      transition={{ delay: 0.03 * i }}
-                      className={`flex items-center gap-3 p-4 rounded-2xl border ${cfg.color}`}>
-                      <button onClick={() => handleTogglePaid(r)}
-                        className="h-6 w-6 rounded-full border-2 border-border hover:border-primary transition-all shrink-0" />
+                    <motion.div
+                      key={reminder.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ delay: 0.03 * index }}
+                      className={`flex items-center gap-3 p-4 rounded-2xl border ${config.color}`}
+                    >
+                      <button
+                        onClick={() => handleTogglePaid(reminder)}
+                        className="h-6 w-6 rounded-full border-2 border-border hover:border-primary transition-all shrink-0"
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate">{r.description}</p>
+                        <p className="text-sm font-bold truncate">{reminder.description}</p>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                           <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(r.due_date), "dd/MM/yyyy")}
+                            {format(parseStoredDate(reminder.due_date), "dd/MM/yyyy")}
                           </p>
-                          {r.category && <span className="text-xs text-muted-foreground">· {r.category}</span>}
-                          {r.recurrent && <span className="text-xs text-muted-foreground">· 🔄 Mensal</span>}
+                          {reminder.category && <span className="text-xs text-muted-foreground">· {reminder.category}</span>}
+                          {reminder.recurrent && <span className="text-xs text-muted-foreground">· 🔁 Mensal</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        {r.amount > 0 && <p className="text-sm font-bold">R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cfg.badge}`}>
-                          {u === "overdue" ? `${Math.abs(days)}d atraso` : u === "ok" || u === "soon" || u === "urgent" ? `${days}d` : cfg.label}
+                        {reminder.amount > 0 && <p className="text-sm font-bold">R$ {reminder.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${config.badge}`}>
+                          {urgency === "overdue"
+                            ? `${Math.abs(days)}d atraso`
+                            : urgency === "ok" || urgency === "soon" || urgency === "urgent"
+                              ? `${days}d`
+                              : config.label}
                         </span>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
@@ -214,11 +264,13 @@ export default function Reminders() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Remover lembrete?</AlertDialogTitle>
-                              <AlertDialogDescription>Deseja remover o lembrete de "{r.description}"?</AlertDialogDescription>
+                              <AlertDialogDescription>Deseja remover o lembrete de "{reminder.description}"?</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                              <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                              <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(reminder.id)}>
+                                Remover
+                              </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -233,26 +285,35 @@ export default function Reminders() {
           {paid.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Pagos ({paid.length})</p>
-              {paid.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 p-4 rounded-2xl border border-border opacity-50">
-                  <button onClick={() => handleTogglePaid(r)}
-                    className="h-6 w-6 rounded-full bg-primary border-2 border-primary flex items-center justify-center shrink-0">
+              {paid.map((reminder) => (
+                <div key={reminder.id} className="flex items-center gap-3 p-4 rounded-2xl border border-border opacity-50">
+                  <button
+                    onClick={() => handleTogglePaid(reminder)}
+                    className="h-6 w-6 rounded-full bg-primary border-2 border-primary flex items-center justify-center shrink-0"
+                  >
                     <Check className="h-3.5 w-3.5 text-primary-foreground" />
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold line-through truncate">{r.description}</p>
-                    <p className="text-xs text-muted-foreground">{format(new Date(r.due_date), "dd/MM/yyyy")}</p>
+                    <p className="text-sm font-bold line-through truncate">{reminder.description}</p>
+                    <p className="text-xs text-muted-foreground">{format(parseStoredDate(reminder.due_date), "dd/MM/yyyy")}</p>
                   </div>
-                  {r.amount > 0 && <p className="text-sm font-bold text-muted-foreground">R$ {r.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
+                  {reminder.amount > 0 && <p className="text-sm font-bold text-muted-foreground">R$ {reminder.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <button className="p-1.5 rounded-lg hover:bg-destructive/10"><Trash2 className="h-3.5 w-3.5 text-destructive" /></button>
+                      <button className="p-1.5 rounded-lg hover:bg-destructive/10">
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
-                      <AlertDialogHeader><AlertDialogTitle>Remover?</AlertDialogTitle><AlertDialogDescription>Deseja remover "{r.description}"?</AlertDialogDescription></AlertDialogHeader>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remover?</AlertDialogTitle>
+                        <AlertDialogDescription>Deseja remover "{reminder.description}"?</AlertDialogDescription>
+                      </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                        <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                        <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(reminder.id)}>
+                          Remover
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
