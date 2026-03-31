@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import kashLogo from "@/assets/kash-logo.png";
 
 const navItems = [
   { path: "/", label: "Painel", icon: LayoutDashboard },
@@ -72,12 +73,13 @@ export default function Layout() {
     <div className="min-h-screen bg-background flex">
       <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card p-6 fixed h-full">
         <div className="mb-10 flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-blue-500">Kash</span>
-              <span className="text-foreground"> Dashboard</span>
-            </h1>
-            <p className="text-xs text-muted-foreground mt-1">Gestao financeira pessoal</p>
+          <div className="min-w-0">
+            <img
+              src={kashLogo}
+              alt="Kash Dashboard"
+              className="h-auto w-[176px] max-w-full object-contain"
+            />
+            <p className="text-xs text-muted-foreground mt-2">Gestao financeira pessoal</p>
           </div>
           <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-secondary transition-colors mt-0.5">
             {dark ? (
@@ -153,10 +155,11 @@ export default function Layout() {
       </aside>
 
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <h1 className="text-lg font-bold tracking-tight">
-          <span className="text-blue-500">Kash</span>
-          <span className="text-foreground"> Dashboard</span>
-        </h1>
+        <img
+          src={kashLogo}
+          alt="Kash Dashboard"
+          className="h-auto w-[156px] max-w-full object-contain"
+        />
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary"
