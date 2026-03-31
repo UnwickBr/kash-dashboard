@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import BudgetCard from "../components/BudgetCard";
 import { useAuth } from "@/lib/AuthContext";
 
-const expenseCategories = ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Outros"];
+const expenseCategories = ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Outros"];
 
 export default function Budgets() {
   const { currentUser } = useAuth();
@@ -26,12 +26,12 @@ export default function Budgets() {
   const loadData = async () => {
     setLoading(true);
     const email = currentUser?.email;
-    const [b, t] = await Promise.all([
+    const [budgetData, transactionData] = await Promise.all([
       email ? base44.entities.Budget.filter({ created_by: email }, "-created_date", 50) : Promise.resolve([]),
       email ? base44.entities.Transaction.filter({ created_by: email }, "-date", 200) : Promise.resolve([]),
     ]);
-    setBudgets(b);
-    setTransactions(t);
+    setBudgets(budgetData);
+    setTransactions(transactionData);
     setLoading(false);
   };
 
@@ -39,28 +39,26 @@ export default function Budgets() {
     if (currentUser) loadData();
   }, [currentUser]);
 
-  const currentBudgets = useMemo(() => {
-    return budgets.filter((b) => b.month === currentMonth);
-  }, [budgets, currentMonth]);
+  const currentBudgets = useMemo(() => budgets.filter((budget) => budget.month === currentMonth), [budgets, currentMonth]);
 
   const spentByCategory = useMemo(() => {
     const map = {};
     transactions
-      .filter((t) => {
-        const d = new Date(t.date);
-        return t.type === "despesa" && format(d, "yyyy-MM") === currentMonth;
+      .filter((transaction) => {
+        const date = new Date(transaction.date);
+        return transaction.type === "despesa" && format(date, "yyyy-MM") === currentMonth;
       })
-      .forEach((t) => {
-        map[t.category] = (map[t.category] || 0) + t.amount;
+      .forEach((transaction) => {
+        map[transaction.category] = (map[transaction.category] || 0) + transaction.amount;
       });
     return map;
   }, [transactions, currentMonth]);
 
-  const totalBudget = currentBudgets.reduce((s, b) => s + b.limit_amount, 0);
-  const totalSpent = currentBudgets.reduce((s, b) => s + (spentByCategory[b.category] || 0), 0);
+  const totalBudget = currentBudgets.reduce((sum, budget) => sum + budget.limit_amount, 0);
+  const totalSpent = currentBudgets.reduce((sum, budget) => sum + (spentByCategory[budget.category] || 0), 0);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
+  const handleCreate = async (event) => {
+    event.preventDefault();
     await base44.entities.Budget.create({
       ...form,
       limit_amount: parseFloat(form.limit_amount),
@@ -111,13 +109,15 @@ export default function Budgets() {
             <form onSubmit={handleCreate} className="space-y-4 mt-2">
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
-                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <Select value={form.category} onValueChange={(value) => setForm({ ...form, category: value })}>
                   <SelectTrigger className="mt-1.5 rounded-xl">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {expenseCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {expenseCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -131,7 +131,7 @@ export default function Budgets() {
                   min="1"
                   placeholder="0,00"
                   value={form.limit_amount}
-                  onChange={(e) => setForm({ ...form, limit_amount: e.target.value })}
+                  onChange={(event) => setForm({ ...form, limit_amount: event.target.value })}
                   required
                 />
               </div>
@@ -143,7 +143,6 @@ export default function Budgets() {
         </Dialog>
       </motion.div>
 
-      {/* Summary */}
       {currentBudgets.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -174,7 +173,6 @@ export default function Budgets() {
         </motion.div>
       )}
 
-      {/* Budget Cards */}
       {currentBudgets.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -187,12 +185,12 @@ export default function Budgets() {
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {currentBudgets.map((budget, i) => (
+          {currentBudgets.map((budget, index) => (
             <motion.div
               key={budget.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i }}
+              transition={{ delay: 0.05 * index }}
             >
               <BudgetCard
                 budget={budget}
