@@ -218,7 +218,7 @@ const handlers = {
     const checkout = await asaasRequest("/checkouts", {
       method: "POST",
       body: {
-        billingTypes: ["CREDIT_CARD", "PIX"],
+        billingTypes: ["CREDIT_CARD"],
         chargeTypes: ["RECURRENT"],
         minutesToExpire: 60,
         callback: appUrl
