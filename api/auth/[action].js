@@ -211,7 +211,8 @@ const handlers = {
     await ensureSchema();
     const sql = getSql();
     await ensureAsaasCustomer(user);
-    const appUrl = (process.env.APP_URL || "").replace(/\/$/, "");
+    const inferredAppUrl = req.headers.origin || `https://${req.headers.host}`;
+    const appUrl = (process.env.APP_URL || inferredAppUrl || "").replace(/\/$/, "");
     const now = new Date();
     const nextDueDate = new Date(now.getTime() + 5 * 60 * 1000);
     const endDate = new Date(now.getTime() + 10 * 365 * 24 * 60 * 60 * 1000);
@@ -221,13 +222,11 @@ const handlers = {
         billingTypes: ["CREDIT_CARD"],
         chargeTypes: ["RECURRENT"],
         minutesToExpire: 60,
-        callback: appUrl
-          ? {
-              successUrl: `${appUrl}/#/premium?checkout=success`,
-              cancelUrl: `${appUrl}/#/premium?checkout=cancel`,
-              expiredUrl: `${appUrl}/#/premium?checkout=expired`,
-            }
-          : undefined,
+        callback: {
+          successUrl: `${appUrl}/#/premium?checkout=success`,
+          cancelUrl: `${appUrl}/#/premium?checkout=cancel`,
+          expiredUrl: `${appUrl}/#/premium?checkout=expired`,
+        },
         items: [
           {
             name: "Kash Premium",
