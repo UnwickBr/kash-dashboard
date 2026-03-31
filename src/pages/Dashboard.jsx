@@ -217,12 +217,12 @@ export default function Dashboard() {
         <StatCard title="Despesas" value={formatCurrency(stats.expenses)} icon={TrendingDown} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.9fr] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[0.85fr_1.45fr] gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[360px]"
+          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[320px]"
         >
           <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Receitas vs Despesas</h3>
           <MonthlyChart data={monthlyData} />
@@ -232,7 +232,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[400px]"
         >
           <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Gastos por Categoria</h3>
           <SpendingChart data={spendingByCategory.data} categories={spendingByCategory.categories} />
