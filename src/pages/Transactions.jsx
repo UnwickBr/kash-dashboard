@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { base44 } from "@/api/base44Client";
 import { Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -26,6 +28,7 @@ export default function Transactions() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
 
   const loadData = async () => {
     setLoading(true);
@@ -46,18 +49,38 @@ export default function Transactions() {
   };
 
   const categories = useMemo(() => {
-    const cats = new Set(transactions.map((t) => t.category));
+    const cats = new Set(transactions.map((transaction) => transaction.category));
     return Array.from(cats).sort();
   }, [transactions]);
 
-  const filtered = useMemo(() => {
-    return transactions.filter((t) => {
-      const matchSearch = t.description.toLowerCase().includes(search.toLowerCase());
-      const matchType = filterType === "all" || t.type === filterType;
-      const matchCat = filterCategory === "all" || t.category === filterCategory;
-      return matchSearch && matchType && matchCat;
+  const monthOptions = useMemo(() => {
+    const map = new Map();
+
+    transactions.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      const key = format(date, "yyyy-MM");
+      if (!map.has(key)) {
+        map.set(key, {
+          value: key,
+          label: format(date, "MMMM 'de' yyyy", { locale: ptBR }),
+          sortKey: date.getTime(),
+        });
+      }
     });
-  }, [transactions, search, filterType, filterCategory]);
+
+    return Array.from(map.values()).sort((left, right) => right.sortKey - left.sortKey);
+  }, [transactions]);
+
+  const filtered = useMemo(() => {
+    return transactions.filter((transaction) => {
+      const matchSearch = transaction.description.toLowerCase().includes(search.toLowerCase());
+      const matchType = filterType === "all" || transaction.type === filterType;
+      const matchCategory = filterCategory === "all" || transaction.category === filterCategory;
+      const matchMonth = filterMonth === "all" || format(new Date(transaction.date), "yyyy-MM") === filterMonth;
+
+      return matchSearch && matchType && matchCategory && matchMonth;
+    });
+  }, [transactions, search, filterType, filterCategory, filterMonth]);
 
   if (loading) {
     return (
@@ -75,30 +98,32 @@ export default function Transactions() {
         className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Transações</h1>
-          <p className="text-sm text-muted-foreground mt-1">{transactions.length} transações registradas</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Transacoes</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {transactions.length} transacoes registradas e salvas no seu historico
+          </p>
         </div>
         <AddTransactionDialog onSuccess={loadData} />
       </motion.div>
 
-      {/* Filters */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-card rounded-2xl border border-border p-4 flex flex-col sm:flex-row gap-3"
+        className="bg-card rounded-2xl border border-border p-4 flex flex-col xl:flex-row gap-3"
       >
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             className="pl-9 rounded-xl"
-            placeholder="Buscar transação..."
+            placeholder="Buscar transacao..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
+
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-full sm:w-40 rounded-xl">
+          <SelectTrigger className="w-full xl:w-40 rounded-xl">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -107,20 +132,36 @@ export default function Transactions() {
             <SelectItem value="despesa">Despesas</SelectItem>
           </SelectContent>
         </Select>
+
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full sm:w-44 rounded-xl">
+          <SelectTrigger className="w-full xl:w-44 rounded-xl">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas categorias</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={filterMonth} onValueChange={setFilterMonth}>
+          <SelectTrigger className="w-full xl:w-52 rounded-xl">
+            <SelectValue placeholder="Mes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os meses</SelectItem>
+            {monthOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </motion.div>
 
-      {/* Transaction List */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -129,36 +170,36 @@ export default function Transactions() {
       >
         {filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">
-            {search || filterType !== "all" || filterCategory !== "all"
-              ? "Nenhuma transação encontrada com esses filtros."
-              : "Nenhuma transação registrada ainda."}
+            {search || filterType !== "all" || filterCategory !== "all" || filterMonth !== "all"
+              ? "Nenhuma transacao encontrada com esses filtros."
+              : "Nenhuma transacao registrada ainda."}
           </p>
         ) : (
           <div>
-            {filtered.map((t) => (
-              <div key={t.id} className="flex items-center gap-2 group">
+            {filtered.map((transaction) => (
+              <div key={transaction.id} className="flex items-center gap-2 group">
                 <div className="flex-1">
-                  <TransactionItem transaction={t} />
+                  <TransactionItem transaction={transaction} />
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button
                       className="flex h-10 w-10 items-center justify-center rounded-xl opacity-100 transition-all hover:bg-destructive/10 md:opacity-0 md:group-hover:opacity-100"
-                      aria-label={`Excluir transação ${t.description}`}
+                      aria-label={`Excluir transacao ${transaction.description}`}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir transação?</AlertDialogTitle>
+                      <AlertDialogTitle>Excluir transacao?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir "{t.description}"? Esta ação não pode ser desfeita.
+                        Tem certeza que deseja excluir "{transaction.description}"? Esta acao nao pode ser desfeita.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                      <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(t.id)}>
+                      <AlertDialogAction className="rounded-xl bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(transaction.id)}>
                         Excluir
                       </AlertDialogAction>
                     </AlertDialogFooter>

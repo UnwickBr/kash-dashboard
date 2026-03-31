@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion } from "framer-motion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatCard from "../components/StatCard";
 import { useAuth } from "@/lib/AuthContext";
 import TransactionItem from "../components/TransactionItem";
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const { currentUser } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState("current");
 
   const loadData = async () => {
     setLoading(true);
@@ -30,74 +32,110 @@ export default function Dashboard() {
     if (currentUser) loadData();
   }, [currentUser]);
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const monthOptions = useMemo(() => {
+    const map = new Map();
 
-    const monthTransactions = transactions.filter((t) => {
-      const d = new Date(t.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    transactions.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      const key = format(date, "yyyy-MM");
+      if (!map.has(key)) {
+        map.set(key, {
+          value: key,
+          label: format(date, "MMMM 'de' yyyy", { locale: ptBR }),
+          sortKey: date.getTime(),
+        });
+      }
     });
 
-    const income = monthTransactions.filter((t) => t.type === "receita").reduce((s, t) => s + t.amount, 0);
-    const expenses = monthTransactions.filter((t) => t.type === "despesa").reduce((s, t) => s + t.amount, 0);
+    return Array.from(map.values()).sort((left, right) => right.sortKey - left.sortKey);
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    if (selectedMonth === "all") {
+      return transactions;
+    }
+
+    const targetMonth = selectedMonth === "current" ? format(new Date(), "yyyy-MM") : selectedMonth;
+    return transactions.filter((transaction) => format(new Date(transaction.date), "yyyy-MM") === targetMonth);
+  }, [transactions, selectedMonth]);
+
+  const selectedMonthLabel = useMemo(() => {
+    if (selectedMonth === "all") {
+      return "todos os meses";
+    }
+
+    if (selectedMonth === "current") {
+      return format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
+    }
+
+    return monthOptions.find((option) => option.value === selectedMonth)?.label || "mes selecionado";
+  }, [monthOptions, selectedMonth]);
+
+  const stats = useMemo(() => {
+    const income = filteredTransactions.filter((transaction) => transaction.type === "receita").reduce((sum, transaction) => sum + transaction.amount, 0);
+    const expenses = filteredTransactions.filter((transaction) => transaction.type === "despesa").reduce((sum, transaction) => sum + transaction.amount, 0);
     const balance = income - expenses;
 
     return { income, expenses, balance };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const spendingByCategory = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
     const map = {};
-    transactions
-      .filter((t) => {
-        const d = new Date(t.date);
-        return t.type === "despesa" && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      })
-      .forEach((t) => {
-        map[t.category] = (map[t.category] || 0) + t.amount;
+
+    filteredTransactions
+      .filter((transaction) => transaction.type === "despesa")
+      .forEach((transaction) => {
+        map[transaction.category] = (map[transaction.category] || 0) + transaction.amount;
       });
 
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const monthlyData = useMemo(() => {
+    const source = selectedMonth === "all" ? transactions : filteredTransactions;
     const map = {};
-    transactions.forEach((t) => {
-      const d = new Date(t.date);
-      const key = format(d, "MMM yy", { locale: ptBR });
-      if (!map[key]) map[key] = { month: key, receita: 0, despesa: 0, sortKey: d.getTime() };
-      if (t.type === "receita") map[key].receita += t.amount;
-      else map[key].despesa += t.amount;
+
+    source.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      const key = format(date, "MMM yy", { locale: ptBR });
+      if (!map[key]) {
+        map[key] = { month: key, receita: 0, despesa: 0, sortKey: date.getTime() };
+      }
+
+      if (transaction.type === "receita") {
+        map[key].receita += transaction.amount;
+      } else {
+        map[key].despesa += transaction.amount;
+      }
     });
-    return Object.values(map).sort((a, b) => a.sortKey - b.sortKey).slice(-6);
-  }, [transactions]);
+
+    return Object.values(map).sort((left, right) => left.sortKey - right.sortKey).slice(-6);
+  }, [filteredTransactions, selectedMonth, transactions]);
 
   const futureInstallments = useMemo(() => {
     const now = new Date();
     const next3 = [];
+
     for (let i = 1; i <= 3; i++) {
-      const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      const key = format(m, "MMM yy", { locale: ptBR });
+      const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const monthKey = format(monthDate, "MMM yy", { locale: ptBR });
       const total = transactions
-        .filter((t) => {
-          const d = new Date(t.date);
-          return t.type === "despesa" && format(d, "MMM yy", { locale: ptBR }) === key;
+        .filter((transaction) => {
+          const date = new Date(transaction.date);
+          return transaction.type === "despesa" && format(date, "MMM yy", { locale: ptBR }) === monthKey;
         })
-        .reduce((s, t) => s + t.amount, 0);
-      if (total > 0) next3.push({ month: key, value: total });
+        .reduce((sum, transaction) => sum + transaction.amount, 0);
+
+      if (total > 0) {
+        next3.push({ month: monthKey, value: total });
+      }
     }
+
     return next3;
   }, [transactions]);
 
-  const recentTransactions = transactions.slice(0, 5);
-  const currentMonthName = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR });
-
-  const formatCurrency = (v) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+  const recentTransactions = filteredTransactions.slice(0, 5);
+  const formatCurrency = (value) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 
   if (loading) {
     return (
@@ -116,9 +154,27 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Painel Financeiro</h1>
-          <p className="text-sm text-muted-foreground mt-1 capitalize">{currentMonthName}</p>
+          <p className="text-sm text-muted-foreground mt-1 capitalize">
+            Dados salvos de {selectedMonthLabel}
+          </p>
         </div>
-        <AddTransactionDialog onSuccess={loadData} />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="min-w-[220px] rounded-xl">
+              <SelectValue placeholder="Filtrar mes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current">Mes atual</SelectItem>
+              <SelectItem value="all">Todos os meses</SelectItem>
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AddTransactionDialog onSuccess={loadData} />
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -184,12 +240,12 @@ export default function Dashboard() {
         </div>
         {recentTransactions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhuma transacao registrada. Comece adicionando uma!
+            Nenhuma transacao encontrada para esse periodo.
           </p>
         ) : (
           <div>
-            {recentTransactions.map((t) => (
-              <TransactionItem key={t.id} transaction={t} />
+            {recentTransactions.map((transaction) => (
+              <TransactionItem key={transaction.id} transaction={transaction} />
             ))}
           </div>
         )}
