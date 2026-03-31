@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import BudgetCard from "../components/BudgetCard";
 import { useAuth } from "@/lib/AuthContext";
 
-const expenseCategories = ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Outros"];
+const expenseCategories = ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"];
 
 export default function Budgets() {
   const { currentUser } = useAuth();

@@ -10,7 +10,7 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
 
 const categories = {
-  despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Outros"],
+  despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"],
   receita: ["Salário", "Freelance", "Investimentos", "Outros"],
 };
 
