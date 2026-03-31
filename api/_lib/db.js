@@ -29,6 +29,10 @@ export const ensureSchema = async () => {
           birth_date DATE,
           auth_provider TEXT NOT NULL DEFAULT 'local',
           google_sub TEXT UNIQUE,
+          email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+          email_verification_token TEXT,
+          email_verification_sent_at TIMESTAMPTZ,
+          email_verified_at TIMESTAMPTZ,
           role TEXT NOT NULL DEFAULT 'user',
           subscription_status TEXT NOT NULL DEFAULT 'inactive',
           password_hash TEXT NOT NULL,
@@ -37,25 +41,24 @@ export const ensureSchema = async () => {
         )
       `;
 
-      await sql`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS birth_date DATE
-      `;
-
-      await sql`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'local'
-      `;
-
-      await sql`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS google_sub TEXT
-      `;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'local'`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_sent_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
 
       await sql`
         CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx
         ON users (google_sub)
         WHERE google_sub IS NOT NULL
+      `;
+
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS users_email_verification_token_unique_idx
+        ON users (email_verification_token)
+        WHERE email_verification_token IS NOT NULL
       `;
 
       await sql`

@@ -47,7 +47,10 @@ export const sendJson = (res, status, payload) => {
 
 export const handleError = (res, error) => {
   console.error(error);
-  sendJson(res, error.status || 500, { message: error.message || "Erro interno do servidor." });
+  sendJson(res, error.status || 500, {
+    message: error.message || "Erro interno do servidor.",
+    ...(error.payload || {}),
+  });
 };
 
 export const normalizeRecord = (row) => {

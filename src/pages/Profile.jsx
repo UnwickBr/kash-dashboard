@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { format, isValid, parse } from "date-fns";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, LockKeyhole, Save, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -7,6 +8,28 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+
+const formatDateInput = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const toDisplayDate = (value) => {
+  if (!value) return "";
+  const parsedDate = parse(value, "yyyy-MM-dd", new Date());
+  return isValid(parsedDate) ? format(parsedDate, "dd/MM/yyyy") : "";
+};
+
+const toIsoDate = (value) => {
+  if (!value) return "";
+  const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+  if (!isValid(parsedDate) || format(parsedDate, "dd/MM/yyyy") !== value) {
+    return null;
+  }
+  return format(parsedDate, "yyyy-MM-dd");
+};
 
 function PasswordField({ label, placeholder, value, onChange }) {
   const [visible, setVisible] = useState(false);
@@ -59,16 +82,30 @@ export default function Profile() {
     setProfileForm({
       fullName: currentUser.full_name || "",
       email: currentUser.email || "",
-      birthDate: currentUser.birth_date || "",
+      birthDate: toDisplayDate(currentUser.birth_date),
     });
   }, [currentUser]);
 
   const handleProfileSubmit = async (event) => {
     event.preventDefault();
+    const birthDate = toIsoDate(profileForm.birthDate);
+
+    if (profileForm.birthDate && !birthDate) {
+      toast({
+        variant: "destructive",
+        title: "Data inválida",
+        description: "Preencha a data de nascimento no formato DD/MM/AAAA.",
+      });
+      return;
+    }
+
     setSavingProfile(true);
 
     try {
-      await updateProfile(profileForm);
+      await updateProfile({
+        fullName: profileForm.fullName,
+        birthDate,
+      });
       toast({
         title: "Perfil atualizado",
         description: "Seus dados foram salvos com sucesso.",
@@ -124,7 +161,7 @@ export default function Profile() {
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Meu perfil</h1>
         <p className="mt-2 text-muted-foreground">
-          Atualize seus dados de acesso e mantenha sua conta sempre em dia.
+          Atualize seus dados pessoais e mantenha sua conta sempre em dia.
         </p>
       </motion.div>
 
@@ -137,7 +174,7 @@ export default function Profile() {
                 Dados pessoais
               </CardTitle>
               <CardDescription>
-                Esses dados ajudam a identificar sua conta e personalizar sua experiência.
+                O email da conta fica travado após o cadastro para manter a segurança do acesso.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,20 +190,15 @@ export default function Profile() {
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(event) => setProfileForm((current) => ({ ...current, email: event.target.value }))}
-                    placeholder="voce@exemplo.com"
-                    required
-                  />
+                  <Input type="email" value={profileForm.email} disabled readOnly className="bg-muted/60 text-muted-foreground" />
                 </div>
                 <div className="space-y-2">
                   <Label>Data de nascimento</Label>
                   <Input
-                    type="date"
+                    inputMode="numeric"
+                    placeholder="DD/MM/AAAA"
                     value={profileForm.birthDate}
-                    onChange={(event) => setProfileForm((current) => ({ ...current, birthDate: event.target.value }))}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, birthDate: formatDateInput(event.target.value) }))}
                   />
                 </div>
                 <Button type="submit" className="rounded-xl" disabled={savingProfile}>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { format, isValid, parse } from "date-fns";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, LockKeyhole, Moon, ShieldCheck, Sparkles, Sun, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, MailCheck, Moon, ShieldCheck, Sparkles, Sun, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,21 @@ import { Button } from "@/components/ui/button";
 const loginInitialState = { email: "", password: "" };
 const registerInitialState = { fullName: "", email: "", birthDate: "", password: "", confirmPassword: "" };
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+const formatDateInput = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const parseBirthDate = (value) => {
+  const parsedDate = parse(value, "dd/MM/yyyy", new Date());
+  if (!isValid(parsedDate) || format(parsedDate, "dd/MM/yyyy") !== value) {
+    return null;
+  }
+  return parsedDate;
+};
 
 function PasswordField({ label, placeholder, value, onChange }) {
   const [visible, setVisible] = useState(false);
@@ -41,12 +57,14 @@ function PasswordField({ label, placeholder, value, onChange }) {
 }
 
 export default function Auth() {
-  const { login, loginWithGoogle, register } = useAuth();
+  const { login, loginWithGoogle, register, resendVerification } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [loginForm, setLoginForm] = useState(loginInitialState);
   const [registerForm, setRegisterForm] = useState(registerInitialState);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [verificationNotice, setVerificationNotice] = useState("");
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState("");
   const googleButtonRef = useRef(null);
   const [dark, setDark] = useState(() => {
     if (typeof window !== "undefined") {
@@ -83,6 +101,7 @@ export default function Auth() {
         callback: async (response) => {
           setLoading(true);
           setErrorMessage("");
+          setVerificationNotice("");
 
           try {
             await loginWithGoogle({ credential: response.credential });
@@ -134,11 +153,17 @@ export default function Auth() {
     event.preventDefault();
     setLoading(true);
     setErrorMessage("");
+    setVerificationNotice("");
 
     try {
       await login(loginForm);
     } catch (error) {
-      setErrorMessage(error.message || "Não foi possível entrar.");
+      if (error.data?.code === "email_not_verified") {
+        setPendingVerificationEmail(error.data.email || loginForm.email);
+        setVerificationNotice("Seu cadastro existe, mas ainda falta confirmar o email para ativar a conta.");
+      } else {
+        setErrorMessage(error.message || "Não foi possível entrar.");
+      }
     } finally {
       setLoading(false);
     }
@@ -151,18 +176,47 @@ export default function Auth() {
       return;
     }
 
+    const parsedBirthDate = parseBirthDate(registerForm.birthDate);
+    if (!parsedBirthDate) {
+      setErrorMessage("Preencha a data de nascimento no formato DD/MM/AAAA.");
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+    setVerificationNotice("");
+
+    try {
+      const result = await register({
+        fullName: registerForm.fullName,
+        email: registerForm.email,
+        birthDate: format(parsedBirthDate, "yyyy-MM-dd"),
+        password: registerForm.password,
+      });
+      setPendingVerificationEmail(result.email || registerForm.email);
+      setVerificationNotice("Conta criada. Enviamos um email de confirmação para ativar seu acesso.");
+      setActiveTab("login");
+      setRegisterForm(registerInitialState);
+    } catch (error) {
+      setErrorMessage(error.message || "Não foi possível criar a conta.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingVerificationEmail) {
+      return;
+    }
+
     setLoading(true);
     setErrorMessage("");
 
     try {
-      await register({
-        fullName: registerForm.fullName,
-        email: registerForm.email,
-        birthDate: registerForm.birthDate,
-        password: registerForm.password,
-      });
+      await resendVerification({ email: pendingVerificationEmail });
+      setVerificationNotice("Enviamos um novo email de confirmação. Verifique sua caixa de entrada.");
     } catch (error) {
-      setErrorMessage(error.message || "Não foi possível criar a conta.");
+      setErrorMessage(error.message || "Não foi possível reenviar o email.");
     } finally {
       setLoading(false);
     }
@@ -226,17 +280,11 @@ export default function Auth() {
               </div>
             </motion.section>
 
-            <motion.section
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-            >
+            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
               <Card className="rounded-[2rem] border-border/70 shadow-xl">
                 <CardHeader className="space-y-3">
                   <CardTitle className="text-2xl font-bold">Entrar ou criar conta</CardTitle>
-                  <CardDescription>
-                    Acesse seu painel e continue de onde parou.
-                  </CardDescription>
+                  <CardDescription>Acesse seu painel e continue de onde parou.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {googleClientId && (
@@ -312,9 +360,10 @@ export default function Auth() {
                         <div className="space-y-2">
                           <Label>Data de nascimento</Label>
                           <Input
-                            type="date"
+                            inputMode="numeric"
+                            placeholder="DD/MM/AAAA"
                             value={registerForm.birthDate}
-                            onChange={(event) => setRegisterForm((current) => ({ ...current, birthDate: event.target.value }))}
+                            onChange={(event) => setRegisterForm((current) => ({ ...current, birthDate: formatDateInput(event.target.value) }))}
                             required
                           />
                         </div>
@@ -338,6 +387,25 @@ export default function Auth() {
                       </form>
                     </TabsContent>
                   </Tabs>
+
+                  {verificationNotice && (
+                    <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-800">
+                      <div className="flex items-start gap-3">
+                        <MailCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                        <div className="space-y-3">
+                          <p>{verificationNotice}</p>
+                          {pendingVerificationEmail && (
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span className="text-xs font-medium text-blue-700">{pendingVerificationEmail}</span>
+                              <Button type="button" variant="outline" className="h-9 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-100" onClick={handleResendVerification} disabled={loading}>
+                                Reenviar email
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {errorMessage && (
                     <div className="mt-6 rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive">

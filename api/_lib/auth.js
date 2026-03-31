@@ -44,6 +44,7 @@ export const sanitizeUser = (user) => ({
   email: user.email,
   birth_date: user.birth_date,
   auth_provider: user.auth_provider,
+  email_verified: user.email_verified,
   role: user.role,
   subscription_status: user.subscription_status,
   created_date: user.created_at || user.created_date,
@@ -81,6 +82,8 @@ export const getUserFromRequest = async (req) => {
       u.birth_date,
       u.auth_provider,
       u.google_sub,
+      u.email_verified,
+      u.email_verified_at,
       u.role,
       u.subscription_status,
       u.created_at
@@ -136,6 +139,8 @@ export const registerUser = async ({ fullName, email, password, birthDate }) => 
       birth_date,
       auth_provider,
       google_sub,
+      email_verified,
+      email_verified_at,
       role,
       subscription_status,
       password_hash,
@@ -149,13 +154,15 @@ export const registerUser = async ({ fullName, email, password, birthDate }) => 
       ${birthDate || null},
       ${"local"},
       ${null},
+      ${false},
+      ${null},
       ${isFirstUser ? "admin" : "user"},
       ${isFirstUser ? "active" : "inactive"},
       ${passwordHash},
       ${salt},
       ${createdAt}
     )
-    RETURNING id, full_name, email, birth_date, auth_provider, role, subscription_status, created_at
+    RETURNING *
   `;
 
   return rows[0];
@@ -185,6 +192,16 @@ export const loginUser = async ({ email, password }) => {
     throw error;
   }
 
+  if (!user.email_verified) {
+    const error = new Error("Confirme seu email antes de entrar.");
+    error.status = 403;
+    error.payload = {
+      code: "email_not_verified",
+      email: user.email,
+    };
+    throw error;
+  }
+
   return user;
 };
 
@@ -209,6 +226,7 @@ export const findOrCreateGoogleUser = async (payload) => {
   await ensureSchema();
   const sql = getSql();
   const normalizedEmail = String(payload.email).trim().toLowerCase();
+  const verifiedAt = nowIso();
 
   const existingByGoogle = await sql`
     SELECT *
@@ -218,6 +236,18 @@ export const findOrCreateGoogleUser = async (payload) => {
   `;
 
   if (existingByGoogle.length) {
+    if (!existingByGoogle[0].email_verified) {
+      const rows = await sql`
+        UPDATE users
+        SET
+          email_verified = TRUE,
+          email_verified_at = ${verifiedAt},
+          email_verification_token = NULL
+        WHERE id = ${existingByGoogle[0].id}
+        RETURNING *
+      `;
+      return rows[0];
+    }
     return existingByGoogle[0];
   }
 
@@ -233,7 +263,10 @@ export const findOrCreateGoogleUser = async (payload) => {
       UPDATE users
       SET
         google_sub = ${payload.sub},
-        auth_provider = CASE WHEN auth_provider = 'local' THEN auth_provider ELSE 'google' END
+        auth_provider = CASE WHEN auth_provider = 'local' THEN auth_provider ELSE 'google' END,
+        email_verified = TRUE,
+        email_verified_at = ${verifiedAt},
+        email_verification_token = NULL
       WHERE id = ${existingByEmail[0].id}
       RETURNING *
     `;
@@ -255,6 +288,8 @@ export const findOrCreateGoogleUser = async (payload) => {
       birth_date,
       auth_provider,
       google_sub,
+      email_verified,
+      email_verified_at,
       role,
       subscription_status,
       password_hash,
@@ -268,6 +303,8 @@ export const findOrCreateGoogleUser = async (payload) => {
       ${null},
       ${"google"},
       ${payload.sub},
+      ${true},
+      ${verifiedAt},
       ${isFirstUser ? "admin" : "user"},
       ${isFirstUser ? "active" : "inactive"},
       ${passwordHash},
@@ -278,6 +315,43 @@ export const findOrCreateGoogleUser = async (payload) => {
   `;
 
   return rows[0];
+};
+
+export const verifyEmailToken = async (token) => {
+  await ensureSchema();
+  const sql = getSql();
+  const verifiedAt = nowIso();
+  const rows = await sql`
+    UPDATE users
+    SET
+      email_verified = TRUE,
+      email_verified_at = ${verifiedAt},
+      email_verification_token = NULL
+    WHERE email_verification_token = ${token}
+    RETURNING *
+  `;
+
+  if (!rows.length) {
+    const error = new Error("Link de verificação inválido ou expirado.");
+    error.status = 400;
+    throw error;
+  }
+
+  return rows[0];
+};
+
+export const findUnverifiedUserByEmail = async (email) => {
+  await ensureSchema();
+  const sql = getSql();
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const rows = await sql`
+    SELECT *
+    FROM users
+    WHERE email = ${normalizedEmail}
+      AND email_verified = FALSE
+    LIMIT 1
+  `;
+  return rows[0] || null;
 };
 
 export const logoutSession = async (token) => {

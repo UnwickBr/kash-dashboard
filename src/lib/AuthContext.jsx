@@ -9,7 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
-  const [appPublicSettings, setAppPublicSettings] = useState({ mode: "vercel-neon" });
+  const [appPublicSettings] = useState({ mode: "vercel-neon" });
 
   const refreshSession = async () => {
     if (!base44.auth.getToken()) {
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       return currentUser;
     } catch (error) {
       setAuthError({
-        type: error.status === 401 ? "auth_required" : "unknown",
+        type: error.status === 401 ? "auth_required" : error.data?.code || "unknown",
         message: error.message || "Não foi possível entrar.",
       });
       throw error;
@@ -81,23 +81,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async ({ fullName, email, password, birthDate }) => {
-    setIsLoadingAuth(true);
     setAuthError(null);
-    try {
-      const currentUser = await base44.auth.register({ fullName, email, password, birthDate });
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      return currentUser;
-    } catch (error) {
-      setAuthError({
-        type: "unknown",
-        message: error.message || "Não foi possível criar a conta.",
-      });
-      throw error;
-    } finally {
-      setIsLoadingAuth(false);
-    }
+    return base44.auth.register({ fullName, email, password, birthDate });
   };
+
+  const verifyEmail = async (payload) => base44.auth.verifyEmail(payload);
+  const resendVerification = async (payload) => base44.auth.resendVerification(payload);
 
   const logout = async () => {
     await base44.auth.logout();
@@ -112,9 +101,7 @@ export const AuthProvider = ({ children }) => {
     return updatedUser;
   };
 
-  const changePassword = async (payload) => {
-    return base44.auth.changePassword(payload);
-  };
+  const changePassword = async (payload) => base44.auth.changePassword(payload);
 
   const cancelSubscription = async () => {
     const result = await base44.auth.cancelSubscription();
@@ -132,24 +119,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      currentUser: user,
-      isAuthenticated,
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      login,
-      loginWithGoogle,
-      register,
-      updateProfile,
-      changePassword,
-      cancelSubscription,
-      logout,
-      navigateToLogin,
-      checkAppState: refreshSession,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        currentUser: user,
+        isAuthenticated,
+        isLoadingAuth,
+        isLoadingPublicSettings,
+        authError,
+        appPublicSettings,
+        login,
+        loginWithGoogle,
+        register,
+        verifyEmail,
+        resendVerification,
+        updateProfile,
+        changePassword,
+        cancelSubscription,
+        logout,
+        navigateToLogin,
+        checkAppState: refreshSession,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

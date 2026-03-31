@@ -78,12 +78,10 @@ export const base44 = {
   entities: Object.fromEntries(ENTITY_NAMES.map((name) => [name, createEntityApi(name)])),
   auth: {
     async register(payload) {
-      const data = await request("/api/auth/register", {
+      return request("/api/auth/register", {
         method: "POST",
         body: payload,
       });
-      setSessionToken(data.token);
-      return clone(data.user);
     },
     async login(payload) {
       const data = await request("/api/auth/login", {
@@ -103,6 +101,18 @@ export const base44 = {
     },
     async me() {
       return request("/api/auth/me");
+    },
+    async verifyEmail(payload) {
+      return request("/api/auth/verify-email", {
+        method: "POST",
+        body: payload,
+      });
+    },
+    async resendVerification(payload) {
+      return request("/api/auth/resend-verification", {
+        method: "POST",
+        body: payload,
+      });
     },
     async updateProfile(payload) {
       return request("/api/auth/profile", {
