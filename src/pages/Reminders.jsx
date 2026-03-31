@@ -330,12 +330,12 @@ export default function Reminders() {
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex gap-3">
         <Bell className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lembretes por email</p>
+          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Notificações pelo Google Agenda</p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-            O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer.
+            Quando a sua conta estiver conectada com Google, cada lembrete pode ser enviado para o Google Agenda com a data e o horário definidos por você.
           </p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-            Notificações de lembrete com integração ao calendário do celular estarão disponíveis apenas para contas conectadas com Google.
+            As notificações passam a ser feitas pelo próprio Google Agenda no celular ou navegador, de acordo com as permissões da sua conta.
           </p>
           <div className="mt-3">
             {!hasGoogleLogin ? (

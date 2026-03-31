@@ -29,17 +29,11 @@ Para testar login, cadastro e persistência do Neon localmente, use `npm run dev
 2. Configure a variável `DATABASE_URL`.
 3. Faça o deploy.
 
-**Lembretes por Email**
-
-- O projeto inclui um cron diário da Vercel em `/api/cron/reminder-notifications`.
-- Configure `RESEND_API_KEY` e `RESEND_FROM_EMAIL` para o envio dos emails.
-- Configure `APP_URL` com a URL pública do app.
-- Se quiser proteger o cron, configure `CRON_SECRET` na Vercel.
-
 **Google Agenda**
 
 - Para integrar lembretes com Google Agenda, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `APP_URL`.
 - O callback usado pela aplicação é `/api/google-calendar/callback`.
+- Os lembretes podem ser sincronizados com o calendário apenas para contas conectadas com Google.
 
 **Banco de dados**
 
