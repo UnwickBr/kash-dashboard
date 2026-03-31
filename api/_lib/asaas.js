@@ -118,11 +118,22 @@ export const upsertAsaasCustomer = async (user, customerData) => {
   };
 
   if (user.asaas_customer_id) {
-    await asaasRequest(`/customers/${user.asaas_customer_id}`, {
-      method: "PUT",
-      body: payload,
-    });
-    return user.asaas_customer_id;
+    try {
+      await asaasRequest(`/customers/${user.asaas_customer_id}`, {
+        method: "PUT",
+        body: payload,
+      });
+      return user.asaas_customer_id;
+    } catch (error) {
+      const description = JSON.stringify(error.payload || {});
+      const looksDeleted =
+        error.status === 400 &&
+        description.toLowerCase().includes("cliente exclu");
+
+      if (!looksDeleted) {
+        throw error;
+      }
+    }
   }
 
   const createdCustomer = await asaasRequest("/customers", {
@@ -132,7 +143,10 @@ export const upsertAsaasCustomer = async (user, customerData) => {
 
   await sql`
     UPDATE users
-    SET asaas_customer_id = ${createdCustomer.id}
+    SET
+      asaas_customer_id = ${createdCustomer.id},
+      asaas_checkout_id = NULL,
+      asaas_subscription_id = NULL
     WHERE id = ${user.id}
   `;
 
