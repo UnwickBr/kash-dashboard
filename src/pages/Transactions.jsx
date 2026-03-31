@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { base44 } from "@/api/base44Client";
 import { Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { parseStoredDate } from "@/lib/date";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
@@ -57,7 +58,7 @@ export default function Transactions() {
     const map = new Map();
 
     transactions.forEach((transaction) => {
-      const date = new Date(transaction.date);
+      const date = parseStoredDate(transaction.date);
       const key = format(date, "yyyy-MM");
       if (!map.has(key)) {
         map.set(key, {
@@ -76,7 +77,7 @@ export default function Transactions() {
       const matchSearch = transaction.description.toLowerCase().includes(search.toLowerCase());
       const matchType = filterType === "all" || transaction.type === filterType;
       const matchCategory = filterCategory === "all" || transaction.category === filterCategory;
-      const matchMonth = filterMonth === "all" || format(new Date(transaction.date), "yyyy-MM") === filterMonth;
+      const matchMonth = filterMonth === "all" || format(parseStoredDate(transaction.date), "yyyy-MM") === filterMonth;
 
       return matchSearch && matchType && matchCategory && matchMonth;
     });

@@ -1,6 +1,7 @@
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseStoredDate } from "@/lib/date";
 
 const categoryIcons = {
   "Alimentação": "🍽️",
@@ -12,10 +13,13 @@ const categoryIcons = {
   "Salário": "💼",
   "Freelance": "💻",
   "Investimentos": "📈",
+  "Pet": "🐾",
+  "Assinaturas": "🔁",
+  "Cartão de Crédito": "💳",
   "Outros": "📦",
 };
 
-export default function TransactionItem({ transaction, onDelete }) {
+export default function TransactionItem({ transaction }) {
   const isIncome = transaction.type === "receita";
   const icon = categoryIcons[transaction.category] || "📦";
 
@@ -27,7 +31,7 @@ export default function TransactionItem({ transaction, onDelete }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground truncate">{transaction.description}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {transaction.category} • {format(new Date(transaction.date), "dd MMM yyyy", { locale: ptBR })}
+          {transaction.category} • {format(parseStoredDate(transaction.date), "dd MMM yyyy", { locale: ptBR })}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">

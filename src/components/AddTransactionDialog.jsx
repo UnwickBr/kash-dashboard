@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
+import { parseStoredDate } from "@/lib/date";
 
 const categories = {
   despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"],
@@ -92,7 +93,7 @@ export default function AddTransactionDialog({ onSuccess }) {
 
       if (installments > 1) {
         const installmentAmount = totalAmount / installments;
-        const baseDate = new Date(form.date);
+        const baseDate = parseStoredDate(form.date);
         const creates = [];
 
         for (let index = 0; index < installments; index += 1) {

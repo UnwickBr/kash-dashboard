@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import BudgetCard from "../components/BudgetCard";
 import { useAuth } from "@/lib/AuthContext";
+import { parseStoredDate } from "@/lib/date";
 
 const expenseCategories = ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"];
 
@@ -45,7 +46,7 @@ export default function Budgets() {
     const map = {};
     transactions
       .filter((transaction) => {
-        const date = new Date(transaction.date);
+        const date = parseStoredDate(transaction.date);
         return transaction.type === "despesa" && format(date, "yyyy-MM") === currentMonth;
       })
       .forEach((transaction) => {

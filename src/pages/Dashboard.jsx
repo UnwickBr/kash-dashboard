@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import StatCard from "../components/StatCard";
 import { useAuth } from "@/lib/AuthContext";
+import { parseStoredDate } from "@/lib/date";
 import TransactionItem from "../components/TransactionItem";
 import SpendingChart from "../components/SpendingChart";
 import MonthlyChart from "../components/MonthlyChart";
@@ -37,7 +38,7 @@ export default function Dashboard() {
     const map = new Map();
 
     transactions.forEach((transaction) => {
-      const date = new Date(transaction.date);
+      const date = parseStoredDate(transaction.date);
       const key = format(date, "yyyy-MM");
       if (!map.has(key)) {
         map.set(key, {
@@ -57,7 +58,7 @@ export default function Dashboard() {
     }
 
     const targetMonth = selectedMonth === "current" ? format(new Date(), "yyyy-MM") : selectedMonth;
-    return transactions.filter((transaction) => format(new Date(transaction.date), "yyyy-MM") === targetMonth);
+    return transactions.filter((transaction) => format(parseStoredDate(transaction.date), "yyyy-MM") === targetMonth);
   }, [transactions, selectedMonth]);
 
   const selectedMonthLabel = useMemo(() => {
@@ -86,7 +87,7 @@ export default function Dashboard() {
     const dayMap = new Map();
 
     expenses.forEach((transaction) => {
-      const date = new Date(transaction.date);
+      const date = parseStoredDate(transaction.date);
       const key = format(date, "yyyy-MM-dd");
       const label = format(date, "dd/MM", { locale: ptBR });
 
@@ -119,7 +120,7 @@ export default function Dashboard() {
     const map = {};
 
     source.forEach((transaction) => {
-      const date = new Date(transaction.date);
+      const date = parseStoredDate(transaction.date);
       const key = format(date, "MMM yy", { locale: ptBR });
       if (!map[key]) {
         map[key] = { month: key, receita: 0, despesa: 0, sortKey: date.getTime() };
@@ -144,7 +145,7 @@ export default function Dashboard() {
       const monthKey = format(monthDate, "MMM yy", { locale: ptBR });
       const total = transactions
         .filter((transaction) => {
-          const date = new Date(transaction.date);
+          const date = parseStoredDate(transaction.date);
           return transaction.type === "despesa" && format(date, "MMM yy", { locale: ptBR }) === monthKey;
         })
         .reduce((sum, transaction) => sum + transaction.amount, 0);
