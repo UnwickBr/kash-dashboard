@@ -1,7 +1,14 @@
 import { getSql, ensureSchema } from "./db.js";
 
 const DEFAULT_ASAAS_BASE_URL = "https://api-sandbox.asaas.com/v3";
-const DEFAULT_CHECKOUT_HOST = "https://asaas.com";
+
+const inferCheckoutHost = (baseUrl) => {
+  if (baseUrl.includes("api-sandbox.asaas.com")) {
+    return "https://sandbox.asaas.com";
+  }
+
+  return "https://asaas.com";
+};
 
 const getAsaasConfig = () => {
   const apiKey = process.env.ASAAS_API_KEY;
@@ -14,7 +21,7 @@ const getAsaasConfig = () => {
   return {
     apiKey,
     baseUrl: process.env.ASAAS_API_BASE_URL || DEFAULT_ASAAS_BASE_URL,
-    checkoutHost: process.env.ASAAS_CHECKOUT_HOST || DEFAULT_CHECKOUT_HOST,
+    checkoutHost: process.env.ASAAS_CHECKOUT_HOST || inferCheckoutHost(process.env.ASAAS_API_BASE_URL || DEFAULT_ASAAS_BASE_URL),
   };
 };
 

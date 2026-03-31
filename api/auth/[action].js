@@ -274,6 +274,18 @@ const handlers = {
       },
     });
 
+    const checkoutUrl =
+      checkout.url ||
+      checkout.checkoutUrl ||
+      checkout.redirectUrl ||
+      (checkout.id ? buildCheckoutUrl(checkout.id) : null);
+
+    if (!checkoutUrl) {
+      const error = new Error("O Asaas nao retornou uma URL valida para o checkout.");
+      error.status = 502;
+      throw error;
+    }
+
     await sql`
       UPDATE users
       SET asaas_checkout_id = ${checkout.id}
@@ -283,7 +295,7 @@ const handlers = {
     return sendJson(res, 200, {
       success: true,
       checkoutId: checkout.id,
-      checkoutUrl: checkout.url || buildCheckoutUrl(checkout.id),
+      checkoutUrl,
     });
   },
 
