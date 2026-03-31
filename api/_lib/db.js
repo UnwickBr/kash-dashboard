@@ -41,6 +41,10 @@ export const ensureSchema = async () => {
           asaas_customer_id TEXT,
           asaas_subscription_id TEXT,
           asaas_checkout_id TEXT,
+          google_calendar_refresh_token TEXT,
+          google_calendar_connected_at TIMESTAMPTZ,
+          google_calendar_oauth_state TEXT,
+          google_calendar_sync_enabled BOOLEAN NOT NULL DEFAULT FALSE,
           password_hash TEXT NOT NULL,
           password_salt TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -60,6 +64,10 @@ export const ensureSchema = async () => {
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_customer_id TEXT`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_subscription_id TEXT`;
       await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS asaas_checkout_id TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_calendar_refresh_token TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_calendar_connected_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_calendar_oauth_state TEXT`;
+      await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_calendar_sync_enabled BOOLEAN NOT NULL DEFAULT FALSE`;
 
       await sql`
         CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { format, differenceInDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Bell, Trash2, Check, Calendar } from "lucide-react";
+import { Plus, Bell, Trash2, Check, Calendar, Link as LinkIcon, Unlink } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { parseStoredDate } from "@/lib/date";
@@ -22,18 +23,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { toast } from "@/components/ui/use-toast";
 
 const categories = ["Moradia", "Cartão de Crédito", "Saúde", "Assinatura", "Empréstimo", "Água/Luz/Gás", "Internet/Telefone", "Outros"];
 
 const emptyForm = { description: "", amount: "", due_date: "", category: "Outros", recurrent: false };
 
 export default function Reminders() {
-  const { currentUser } = useAuth();
+  const { currentUser, checkAppState, disconnectGoogleCalendar, getGoogleCalendarConnectUrl } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [calendarBusy, setCalendarBusy] = useState(false);
 
   const load = async () => {
     if (!currentUser?.email) return;
@@ -46,6 +51,33 @@ export default function Reminders() {
   useEffect(() => {
     load();
   }, [currentUser]);
+
+  useEffect(() => {
+    const calendarStatus = searchParams.get("calendar");
+    if (!calendarStatus) {
+      return;
+    }
+
+    (async () => {
+      if (calendarStatus === "connected") {
+        await checkAppState();
+        toast({
+          title: "Google Agenda conectada",
+          description: "Seus novos lembretes podem ser adicionados automaticamente ao calendário.",
+        });
+      }
+
+      if (calendarStatus === "error") {
+        toast({
+          variant: "destructive",
+          title: "Não foi possível conectar a Google Agenda",
+          description: "Confira as permissões da conta Google e tente novamente.",
+        });
+      }
+
+      navigate("/lembretes", { replace: true });
+    })();
+  }, [checkAppState, navigate, searchParams]);
 
   const handleAdd = async (event) => {
     event.preventDefault();
@@ -91,6 +123,42 @@ export default function Reminders() {
   const pending = reminders.filter((reminder) => !reminder.paid);
   const paid = reminders.filter((reminder) => reminder.paid);
   const totalPending = pending.reduce((sum, reminder) => sum + (reminder.amount || 0), 0);
+  const hasGoogleLogin = currentUser?.auth_provider === "google" || Boolean(currentUser?.google_sub);
+  const hasCalendarConnection = Boolean(currentUser?.has_google_calendar_connection);
+
+  const handleConnectCalendar = async () => {
+    setCalendarBusy(true);
+    try {
+      const result = await getGoogleCalendarConnectUrl();
+      window.location.href = result.url;
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível iniciar a conexão",
+        description: error.message || "Tente novamente em instantes.",
+      });
+      setCalendarBusy(false);
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    setCalendarBusy(true);
+    try {
+      await disconnectGoogleCalendar();
+      toast({
+        title: "Google Agenda desconectada",
+        description: "Os próximos lembretes deixarão de ser enviados ao seu calendário.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível desconectar",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setCalendarBusy(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -188,7 +256,7 @@ export default function Reminders() {
 
       <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex gap-3">
         <Bell className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Lembretes por email</p>
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
             O Kash envia emails automáticos para lembretes que vencem amanhã, vencem hoje ou acabaram de vencer. Push, SMS e WhatsApp ainda não estão disponíveis.
@@ -196,6 +264,40 @@ export default function Reminders() {
           <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
             Notificações de lembrete com integração ao calendário do celular estarão disponíveis apenas para contas conectadas com Google.
           </p>
+          <div className="mt-3">
+            {!hasGoogleLogin ? (
+              <p className="text-xs font-medium text-blue-700">
+                Entre com Google para habilitar a integração com Google Agenda.
+              </p>
+            ) : hasCalendarConnection ? (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <p className="text-xs font-medium text-blue-700">
+                  Google Agenda conectada. Novos lembretes serão enviados automaticamente para seu calendário.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-100"
+                  onClick={handleDisconnectCalendar}
+                  disabled={calendarBusy}
+                >
+                  <Unlink className="h-3.5 w-3.5 mr-2" />
+                  Desconectar
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-8 rounded-xl border-blue-200 bg-white text-blue-700 hover:bg-blue-100"
+                onClick={handleConnectCalendar}
+                disabled={calendarBusy}
+              >
+                <LinkIcon className="h-3.5 w-3.5 mr-2" />
+                {calendarBusy ? "Conectando..." : "Conectar Google Agenda"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

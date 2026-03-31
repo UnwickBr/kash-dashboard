@@ -131,6 +131,18 @@ export const AuthProvider = ({ children }) => {
     return result;
   };
 
+  const getGoogleCalendarConnectUrl = async () => base44.auth.getGoogleCalendarConnectUrl();
+
+  const disconnectGoogleCalendar = async () => {
+    const result = await base44.auth.disconnectGoogleCalendar();
+    if (result?.user) {
+      setUser(result.user);
+    } else {
+      await refreshSession();
+    }
+    return result;
+  };
+
   const navigateToLogin = () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -157,6 +169,8 @@ export const AuthProvider = ({ children }) => {
         createPremiumCheckout,
         activatePremiumTrial,
         syncPremiumStatus,
+        getGoogleCalendarConnectUrl,
+        disconnectGoogleCalendar,
         logout,
         navigateToLogin,
         checkAppState: refreshSession,

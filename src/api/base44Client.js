@@ -142,6 +142,16 @@ export const base44 = {
         method: "POST",
       });
     },
+    async getGoogleCalendarConnectUrl() {
+      return request("/api/google-calendar/connect", {
+        method: "POST",
+      });
+    },
+    async disconnectGoogleCalendar() {
+      return request("/api/google-calendar/disconnect", {
+        method: "POST",
+      });
+    },
     async syncPremiumStatus() {
       return request("/api/auth/sync-premium-status", {
         method: "POST",

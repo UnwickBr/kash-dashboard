@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       assertValidEntity(entityName);
       const body = await parseJsonBody(req);
-      return sendJson(res, 201, await createUserRecord(user, entityName, body));
+      return sendJson(res, 201, await createUserRecord(req, user, entityName, body));
     }
 
     return sendJson(res, 405, { message: "Method not allowed" });

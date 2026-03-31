@@ -1,4 +1,5 @@
 import { ENTITY_NAMES, ensureSchema, getSql } from "./db.js";
+import { deleteReminderFromGoogleCalendar, syncReminderToGoogleCalendar } from "./google-calendar.js";
 import { makeId, nowIso, normalizeRecord, sortItems, limitItems } from "./utils.js";
 
 export const listUserRecords = async (userId, entityName, sortBy, limit) => {
@@ -22,7 +23,7 @@ export const filterUserRecords = async (userId, entityName, query = {}, sortBy, 
   return limitItems(filtered, limit);
 };
 
-export const createUserRecord = async (user, entityName, payload) => {
+export const createUserRecord = async (req, user, entityName, payload) => {
   await ensureSchema();
   const sql = getSql();
   const id = makeId(entityName);
@@ -44,21 +45,27 @@ export const createUserRecord = async (user, entityName, payload) => {
     )
   `;
 
-  return {
+  const createdRecord = {
     ...data,
     id,
     created_date: createdAt,
     updated_date: createdAt,
   };
+
+  if (entityName === "PaymentReminder") {
+    return syncReminderToGoogleCalendar(req, user, createdRecord);
+  }
+
+  return createdRecord;
 };
 
-export const updateUserRecord = async (userId, entityName, id, payload) => {
+export const updateUserRecord = async (req, user, entityName, id, payload) => {
   await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     SELECT id, data, created_at, updated_at
     FROM entity_records
-    WHERE user_id = ${userId}
+    WHERE user_id = ${user.id}
       AND entity_name = ${entityName}
       AND id = ${id}
     LIMIT 1
@@ -84,25 +91,44 @@ export const updateUserRecord = async (userId, entityName, id, payload) => {
     UPDATE entity_records
     SET data = ${JSON.stringify(nextData)}::jsonb,
         updated_at = ${updatedAt}
-    WHERE user_id = ${userId}
+    WHERE user_id = ${user.id}
       AND entity_name = ${entityName}
       AND id = ${id}
   `;
 
-  return {
+  const updatedRecord = {
     ...nextData,
     id,
     created_date: record.created_date,
     updated_date: updatedAt,
   };
+
+  if (entityName === "PaymentReminder") {
+    return syncReminderToGoogleCalendar(req, user, updatedRecord);
+  }
+
+  return updatedRecord;
 };
 
-export const deleteUserRecord = async (userId, entityName, id) => {
+export const deleteUserRecord = async (req, user, entityName, id) => {
   await ensureSchema();
   const sql = getSql();
+  const rows = await sql`
+    SELECT id, data, created_at, updated_at
+    FROM entity_records
+    WHERE user_id = ${user.id}
+      AND entity_name = ${entityName}
+      AND id = ${id}
+    LIMIT 1
+  `;
+
+  if (rows.length && entityName === "PaymentReminder") {
+    await deleteReminderFromGoogleCalendar(req, user, normalizeRecord(rows[0]));
+  }
+
   await sql`
     DELETE FROM entity_records
-    WHERE user_id = ${userId}
+    WHERE user_id = ${user.id}
       AND entity_name = ${entityName}
       AND id = ${id}
   `;

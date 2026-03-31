@@ -76,6 +76,9 @@ export const sanitizeUser = (user) => ({
   asaas_customer_id: user.asaas_customer_id,
   asaas_subscription_id: user.asaas_subscription_id,
   asaas_checkout_id: user.asaas_checkout_id,
+  has_google_calendar_connection: Boolean(user.google_calendar_refresh_token || user.google_calendar_connected_at),
+  google_calendar_connected_at: user.google_calendar_connected_at,
+  google_calendar_sync_enabled: Boolean(user.google_calendar_sync_enabled),
   has_premium_access: hasPremiumAccess(user),
   created_date: user.created_at || user.created_date,
 });
@@ -122,6 +125,9 @@ export const getUserFromRequest = async (req) => {
       u.asaas_customer_id,
       u.asaas_subscription_id,
       u.asaas_checkout_id,
+      u.google_calendar_refresh_token,
+      u.google_calendar_connected_at,
+      u.google_calendar_sync_enabled,
       u.created_at
     FROM sessions s
     INNER JOIN users u ON u.id = s.user_id

@@ -36,6 +36,11 @@ Para testar login, cadastro e persistência do Neon localmente, use `npm run dev
 - Configure `APP_URL` com a URL pública do app.
 - Se quiser proteger o cron, configure `CRON_SECRET` na Vercel.
 
+**Google Agenda**
+
+- Para integrar lembretes com Google Agenda, configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `APP_URL`.
+- O callback usado pela aplicação é `/api/google-calendar/callback`.
+
 **Banco de dados**
 
 O projeto cria/usa estas estruturas:

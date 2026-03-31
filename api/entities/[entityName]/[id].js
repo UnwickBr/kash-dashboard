@@ -63,11 +63,11 @@ export default async function handler(req, res) {
 
     if (req.method === "PATCH") {
       const body = await parseJsonBody(req);
-      return sendJson(res, 200, await updateUserRecord(user.id, entityName, id, body));
+      return sendJson(res, 200, await updateUserRecord(req, user, entityName, id, body));
     }
 
     if (req.method === "DELETE") {
-      return sendJson(res, 200, await deleteUserRecord(user.id, entityName, id));
+      return sendJson(res, 200, await deleteUserRecord(req, user, entityName, id));
     }
 
     return sendJson(res, 405, { message: "Method not allowed" });
