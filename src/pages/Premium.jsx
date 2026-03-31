@@ -29,6 +29,7 @@ const features = [
 export default function Premium() {
   const { currentUser, cancelSubscription } = useAuth();
   const [loadingCancel, setLoadingCancel] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const isPremium = currentUser?.role === "premium" || currentUser?.role === "admin" || currentUser?.subscription_status === "active";
   const canCancel = isPremium && currentUser?.role !== "admin";
 
@@ -37,6 +38,7 @@ export default function Premium() {
 
     try {
       await cancelSubscription();
+      setCancelDialogOpen(false);
       toast({
         title: "Assinatura cancelada",
         description: "Seu plano premium foi cancelado com sucesso.",
@@ -75,9 +77,14 @@ export default function Premium() {
           </div>
 
           {canCancel && (
-            <AlertDialog>
+            <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="rounded-xl">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => setCancelDialogOpen(true)}
+                >
                   Cancelar assinatura
                 </Button>
               </AlertDialogTrigger>
