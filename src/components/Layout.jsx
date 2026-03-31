@@ -71,13 +71,13 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="hidden lg:flex flex-col w-64 border-r border-border bg-card p-6 fixed h-full">
+      <aside className="hidden lg:flex flex-col w-72 border-r border-border bg-card p-6 fixed h-full">
         <div className="mb-10 flex items-start justify-between">
           <div className="min-w-0">
             <img
               src={kashLogo}
               alt="Kash Dashboard"
-              className="h-auto w-[176px] max-w-full object-contain"
+              className="h-auto w-[210px] max-w-full object-contain"
             />
             <p className="text-xs text-muted-foreground mt-2">Gestao financeira pessoal</p>
           </div>
@@ -158,7 +158,7 @@ export default function Layout() {
         <img
           src={kashLogo}
           alt="Kash Dashboard"
-          className="h-auto w-[156px] max-w-full object-contain"
+          className="h-auto w-[188px] max-w-full object-contain"
         />
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -251,7 +251,7 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 lg:ml-64 pt-16 lg:pt-0">
+      <main className="flex-1 lg:ml-72 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
           <Outlet />
         </div>
