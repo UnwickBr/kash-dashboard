@@ -61,11 +61,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async ({ fullName, email, password }) => {
+  const loginWithGoogle = async (payload) => {
     setIsLoadingAuth(true);
     setAuthError(null);
     try {
-      const currentUser = await base44.auth.register({ fullName, email, password });
+      const currentUser = await base44.auth.loginWithGoogle(payload);
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      return currentUser;
+    } catch (error) {
+      setAuthError({
+        type: error.status === 401 ? "auth_required" : "unknown",
+        message: error.message || "Não foi possível entrar com Google.",
+      });
+      throw error;
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
+  const register = async ({ fullName, email, password, birthDate }) => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
+    try {
+      const currentUser = await base44.auth.register({ fullName, email, password, birthDate });
       setUser(currentUser);
       setIsAuthenticated(true);
       return currentUser;
@@ -87,6 +106,26 @@ export const AuthProvider = ({ children }) => {
     setAuthError(null);
   };
 
+  const updateProfile = async (payload) => {
+    const updatedUser = await base44.auth.updateProfile(payload);
+    setUser(updatedUser);
+    return updatedUser;
+  };
+
+  const changePassword = async (payload) => {
+    return base44.auth.changePassword(payload);
+  };
+
+  const cancelSubscription = async () => {
+    const result = await base44.auth.cancelSubscription();
+    if (result?.user) {
+      setUser(result.user);
+    } else {
+      await refreshSession();
+    }
+    return result;
+  };
+
   const navigateToLogin = () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -102,7 +141,11 @@ export const AuthProvider = ({ children }) => {
       authError,
       appPublicSettings,
       login,
+      loginWithGoogle,
       register,
+      updateProfile,
+      changePassword,
+      cancelSubscription,
       logout,
       navigateToLogin,
       checkAppState: refreshSession,

@@ -16,6 +16,7 @@ import ShoppingList from './pages/ShoppingList';
 import Reminders from './pages/Reminders';
 import Premium from './pages/Premium';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 
 const AuthenticatedApp = () => {
   const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
@@ -52,6 +53,7 @@ const AuthenticatedApp = () => {
         <Route path="/lista-compras" element={<ShoppingList />} />
         <Route path="/lembretes" element={<Reminders />} />
         <Route path="/premium" element={<Premium />} />
+        <Route path="/meu-perfil" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>

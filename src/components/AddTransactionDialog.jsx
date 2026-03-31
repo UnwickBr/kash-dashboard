@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { addMonths, format } from "date-fns";
+import { addMonths, format, isValid, parse } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,52 +7,126 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import { toast } from "@/components/ui/use-toast";
 
 const categories = {
   despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Outros"],
   receita: ["Salário", "Freelance", "Investimentos", "Outros"],
 };
 
+const formatDateInput = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
 export default function AddTransactionDialog({ onSuccess }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const today = new Date();
+  const initialDate = format(today, "yyyy-MM-dd");
+  const initialDateLabel = format(today, "dd/MM/yyyy");
   const [form, setForm] = useState({
     description: "",
     amount: "",
     type: "despesa",
     category: "",
-    date: new Date().toISOString().split("T")[0],
+    date: initialDate,
     notes: "",
     installments: "1",
   });
+  const [dateInput, setDateInput] = useState(initialDateLabel);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const totalAmount = parseFloat(form.amount);
-    const installments = parseInt(form.installments) || 1;
-    if (installments > 1) {
-      const parcela = totalAmount / installments;
-      const baseDate = new Date(form.date);
-      const creates = [];
-      for (let i = 0; i < installments; i++) {
-        const d = addMonths(baseDate, i);
-        creates.push(base44.entities.Transaction.create({
-          ...form,
-          amount: parseFloat(parcela.toFixed(2)),
-          date: format(d, "yyyy-MM-dd"),
-          description: `${form.description} (${i + 1}/${installments})`,
-          notes: form.notes,
-        }));
-      }
-      await Promise.all(creates);
-    } else {
-      await base44.entities.Transaction.create({ ...form, amount: totalAmount });
+  const handleDateChange = (value) => {
+    const maskedValue = formatDateInput(value);
+    setDateInput(maskedValue);
+
+    if (maskedValue.length !== 10) {
+      return;
     }
-    setLoading(false);
-    setOpen(false);
-    setForm({ description: "", amount: "", type: "despesa", category: "", date: new Date().toISOString().split("T")[0], notes: "", installments: "1" });
-    onSuccess?.();
+
+    const parsedDate = parse(maskedValue, "dd/MM/yyyy", new Date());
+    if (!isValid(parsedDate) || format(parsedDate, "dd/MM/yyyy") !== maskedValue) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      date: format(parsedDate, "yyyy-MM-dd"),
+    }));
+  };
+
+  const resetForm = () => {
+    const nextToday = new Date();
+    setForm({
+      description: "",
+      amount: "",
+      type: "despesa",
+      category: "",
+      date: format(nextToday, "yyyy-MM-dd"),
+      notes: "",
+      installments: "1",
+    });
+    setDateInput(format(nextToday, "dd/MM/yyyy"));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const parsedDate = parse(dateInput, "dd/MM/yyyy", new Date());
+    if (!isValid(parsedDate) || format(parsedDate, "dd/MM/yyyy") !== dateInput) {
+      toast({
+        variant: "destructive",
+        title: "Data inválida",
+        description: "Preencha a data no formato DD/MM/AAAA.",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const totalAmount = parseFloat(form.amount);
+      const installments = parseInt(form.installments, 10) || 1;
+
+      if (installments > 1) {
+        const installmentAmount = totalAmount / installments;
+        const baseDate = new Date(form.date);
+        const creates = [];
+
+        for (let index = 0; index < installments; index += 1) {
+          const installmentDate = addMonths(baseDate, index);
+          creates.push(
+            base44.entities.Transaction.create({
+              ...form,
+              amount: parseFloat(installmentAmount.toFixed(2)),
+              date: format(installmentDate, "yyyy-MM-dd"),
+              description: `${form.description} (${index + 1}/${installments})`,
+            })
+          );
+        }
+
+        await Promise.all(creates);
+      } else {
+        await base44.entities.Transaction.create({
+          ...form,
+          amount: totalAmount,
+        });
+      }
+
+      setOpen(false);
+      resetForm();
+      onSuccess?.();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível salvar",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,7 +142,7 @@ export default function AddTransactionDialog({ onSuccess }) {
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">Nova Transação</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</Label>
@@ -76,10 +150,11 @@ export default function AddTransactionDialog({ onSuccess }) {
                 className="mt-1.5 rounded-xl"
                 placeholder="Ex: Supermercado"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
                 required
               />
             </div>
+
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor (R$)</Label>
               <Input
@@ -89,23 +164,26 @@ export default function AddTransactionDialog({ onSuccess }) {
                 min="0.01"
                 placeholder="0,00"
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(event) => setForm((current) => ({ ...current, amount: event.target.value }))}
                 required
               />
             </div>
+
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</Label>
               <Input
                 className="mt-1.5 rounded-xl"
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                inputMode="numeric"
+                placeholder="DD/MM/AAAA"
+                value={dateInput}
+                onChange={(event) => handleDateChange(event.target.value)}
                 required
               />
             </div>
+
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v, category: "" })}>
+              <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value, category: "" }))}>
                 <SelectTrigger className="mt-1.5 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -115,48 +193,65 @@ export default function AddTransactionDialog({ onSuccess }) {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
-              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+              <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value }))}>
                 <SelectTrigger className="mt-1.5 rounded-xl">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories[form.type].map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  {categories[form.type].map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
             {form.type === "despesa" && (
               <div>
                 <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Parcelado em</Label>
-                <Select value={form.installments} onValueChange={(v) => setForm({ ...form, installments: v })}>
-                  <SelectTrigger className="mt-1.5 rounded-xl"><SelectValue /></SelectTrigger>
+                <Select value={form.installments} onValueChange={(value) => setForm((current) => ({ ...current, installments: value }))}>
+                  <SelectTrigger className="mt-1.5 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {[1,2,3,4,5,6,7,8,9,10,11,12,18,24].map((n) => (
-                      <SelectItem key={n} value={String(n)}>{n === 1 ? "À vista" : `${n}x`}</SelectItem>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24].map((number) => (
+                      <SelectItem key={number} value={String(number)}>
+                        {number === 1 ? "À vista" : `${number}x`}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {parseInt(form.installments) > 1 && form.amount && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {form.installments}x de R$ {(parseFloat(form.amount) / parseInt(form.installments)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                {parseInt(form.installments, 10) > 1 && form.amount && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {form.installments}x de R${" "}
+                    {(parseFloat(form.amount) / parseInt(form.installments, 10)).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                    })}
                   </p>
                 )}
               </div>
             )}
+
             <div className="col-span-2">
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Observações</Label>
               <Input
                 className="mt-1.5 rounded-xl"
                 placeholder="Opcional"
                 value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
               />
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-xl" disabled={loading || !form.description || !form.amount || !form.category}>
+
+          <Button
+            type="submit"
+            className="w-full rounded-xl"
+            disabled={loading || !form.description || !form.amount || !form.category || dateInput.length !== 10}
+          >
             {loading ? "Salvando..." : "Adicionar Transação"}
           </Button>
         </form>

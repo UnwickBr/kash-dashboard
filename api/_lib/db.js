@@ -26,12 +26,36 @@ export const ensureSchema = async () => {
           id TEXT PRIMARY KEY,
           full_name TEXT NOT NULL,
           email TEXT NOT NULL UNIQUE,
+          birth_date DATE,
+          auth_provider TEXT NOT NULL DEFAULT 'local',
+          google_sub TEXT UNIQUE,
           role TEXT NOT NULL DEFAULT 'user',
           subscription_status TEXT NOT NULL DEFAULT 'inactive',
           password_hash TEXT NOT NULL,
           password_salt TEXT NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
+      `;
+
+      await sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS birth_date DATE
+      `;
+
+      await sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'local'
+      `;
+
+      await sql`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS google_sub TEXT
+      `;
+
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS users_google_sub_unique_idx
+        ON users (google_sub)
+        WHERE google_sub IS NOT NULL
       `;
 
       await sql`

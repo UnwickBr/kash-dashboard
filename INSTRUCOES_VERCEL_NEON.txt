@@ -184,6 +184,9 @@ Se a Vercel mostrar essas tres opcoes, marque as tres.
 
 7.4. Salve
 
+
+npx plugins add vercel/vercel-plugin
+
 ==================================================
 8. ESCOLHER A VERSAO DO NODE NA VERCEL
 ==================================================

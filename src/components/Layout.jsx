@@ -1,5 +1,20 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, ArrowLeftRight, Target, PiggyBank, ShoppingCart, Menu, X, Sun, Moon, Bell, Crown, Shield, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  ArrowLeftRight,
+  Target,
+  PiggyBank,
+  ShoppingCart,
+  Menu,
+  X,
+  Sun,
+  Moon,
+  Bell,
+  Crown,
+  Shield,
+  LogOut,
+  UserRound,
+} from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -89,9 +104,20 @@ export default function Layout() {
 
         <div className="pt-4 border-t border-border space-y-4">
           <div className="rounded-2xl bg-secondary/70 p-3">
-            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuário local"}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuário"}</p>
             <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
           </div>
+          <Link
+            to="/meu-perfil"
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
+              location.pathname === "/meu-perfil"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <UserRound className="h-4 w-4" />
+            Meu perfil
+          </Link>
           <button
             type="button"
             onClick={logout}
@@ -138,6 +164,18 @@ export default function Layout() {
                   </Link>
                 );
               })}
+              <Link
+                to="/meu-perfil"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  location.pathname === "/meu-perfil"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+              >
+                <UserRound className="h-4 w-4" />
+                Meu perfil
+              </Link>
               {currentUser?.role === "admin" && (
                 <Link
                   to="/admin"

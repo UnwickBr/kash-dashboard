@@ -93,8 +93,33 @@ export const base44 = {
       setSessionToken(data.token);
       return clone(data.user);
     },
+    async loginWithGoogle(payload) {
+      const data = await request("/api/auth/google", {
+        method: "POST",
+        body: payload,
+      });
+      setSessionToken(data.token);
+      return clone(data.user);
+    },
     async me() {
       return request("/api/auth/me");
+    },
+    async updateProfile(payload) {
+      return request("/api/auth/profile", {
+        method: "PATCH",
+        body: payload,
+      });
+    },
+    async changePassword(payload) {
+      return request("/api/auth/change-password", {
+        method: "POST",
+        body: payload,
+      });
+    },
+    async cancelSubscription() {
+      return request("/api/auth/cancel-subscription", {
+        method: "POST",
+      });
     },
     async logout() {
       try {

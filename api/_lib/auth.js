@@ -1,14 +1,49 @@
 import crypto from "node:crypto";
+import { OAuth2Client } from "google-auth-library";
 import { ensureSchema, getSql } from "./db.js";
 import { makeId, nowIso } from "./utils.js";
 
 const hashPassword = (password, salt) =>
   crypto.scryptSync(password, salt, 64).toString("hex");
 
+let googleClient = null;
+
+const getGoogleClientId = () => process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || null;
+
+const getGoogleClient = () => {
+  const clientId = getGoogleClientId();
+  if (!clientId) {
+    const error = new Error("GOOGLE_CLIENT_ID não configurado.");
+    error.status = 500;
+    throw error;
+  }
+
+  if (!googleClient) {
+    googleClient = new OAuth2Client(clientId);
+  }
+
+  return googleClient;
+};
+
+export const createPasswordHash = (password, salt = crypto.randomBytes(16).toString("hex")) => ({
+  salt,
+  passwordHash: hashPassword(password, salt),
+});
+
+export const verifyPassword = (password, user) => {
+  const suppliedHash = hashPassword(password, user.password_salt);
+  return crypto.timingSafeEqual(
+    Buffer.from(user.password_hash, "hex"),
+    Buffer.from(suppliedHash, "hex")
+  );
+};
+
 export const sanitizeUser = (user) => ({
   id: user.id,
   full_name: user.full_name,
   email: user.email,
+  birth_date: user.birth_date,
+  auth_provider: user.auth_provider,
   role: user.role,
   subscription_status: user.subscription_status,
   created_date: user.created_at || user.created_date,
@@ -43,6 +78,9 @@ export const getUserFromRequest = async (req) => {
       u.id,
       u.full_name,
       u.email,
+      u.birth_date,
+      u.auth_provider,
+      u.google_sub,
       u.role,
       u.subscription_status,
       u.created_at
@@ -73,7 +111,7 @@ export const requireAdmin = (user) => {
   }
 };
 
-export const registerUser = async ({ fullName, email, password }) => {
+export const registerUser = async ({ fullName, email, password, birthDate }) => {
   await ensureSchema();
   const sql = getSql();
   const normalizedEmail = String(email).trim().toLowerCase();
@@ -87,8 +125,7 @@ export const registerUser = async ({ fullName, email, password }) => {
   const countRows = await sql`SELECT COUNT(*)::int AS count FROM users`;
   const isFirstUser = Number(countRows[0]?.count || 0) === 0;
   const id = makeId("user");
-  const salt = crypto.randomBytes(16).toString("hex");
-  const passwordHash = hashPassword(password, salt);
+  const { salt, passwordHash } = createPasswordHash(password);
   const createdAt = nowIso();
 
   const rows = await sql`
@@ -96,6 +133,9 @@ export const registerUser = async ({ fullName, email, password }) => {
       id,
       full_name,
       email,
+      birth_date,
+      auth_provider,
+      google_sub,
       role,
       subscription_status,
       password_hash,
@@ -106,13 +146,16 @@ export const registerUser = async ({ fullName, email, password }) => {
       ${id},
       ${String(fullName).trim()},
       ${normalizedEmail},
+      ${birthDate || null},
+      ${"local"},
+      ${null},
       ${isFirstUser ? "admin" : "user"},
       ${isFirstUser ? "active" : "inactive"},
       ${passwordHash},
       ${salt},
       ${createdAt}
     )
-    RETURNING id, full_name, email, role, subscription_status, created_at
+    RETURNING id, full_name, email, birth_date, auth_provider, role, subscription_status, created_at
   `;
 
   return rows[0];
@@ -136,19 +179,105 @@ export const loginUser = async ({ email, password }) => {
     throw error;
   }
 
-  const suppliedHash = hashPassword(password, user.password_salt);
-  const match = crypto.timingSafeEqual(
-    Buffer.from(user.password_hash, "hex"),
-    Buffer.from(suppliedHash, "hex")
-  );
-
-  if (!match) {
+  if (!verifyPassword(password, user)) {
     const error = new Error("Email ou senha inválidos.");
     error.status = 401;
     throw error;
   }
 
   return user;
+};
+
+export const verifyGoogleCredential = async (credential) => {
+  const client = getGoogleClient();
+  const ticket = await client.verifyIdToken({
+    idToken: credential,
+    audience: getGoogleClientId(),
+  });
+
+  const payload = ticket.getPayload();
+  if (!payload?.sub || !payload?.email || !payload?.email_verified) {
+    const error = new Error("Não foi possível validar a conta Google.");
+    error.status = 401;
+    throw error;
+  }
+
+  return payload;
+};
+
+export const findOrCreateGoogleUser = async (payload) => {
+  await ensureSchema();
+  const sql = getSql();
+  const normalizedEmail = String(payload.email).trim().toLowerCase();
+
+  const existingByGoogle = await sql`
+    SELECT *
+    FROM users
+    WHERE google_sub = ${payload.sub}
+    LIMIT 1
+  `;
+
+  if (existingByGoogle.length) {
+    return existingByGoogle[0];
+  }
+
+  const existingByEmail = await sql`
+    SELECT *
+    FROM users
+    WHERE email = ${normalizedEmail}
+    LIMIT 1
+  `;
+
+  if (existingByEmail.length) {
+    const rows = await sql`
+      UPDATE users
+      SET
+        google_sub = ${payload.sub},
+        auth_provider = CASE WHEN auth_provider = 'local' THEN auth_provider ELSE 'google' END
+      WHERE id = ${existingByEmail[0].id}
+      RETURNING *
+    `;
+    return rows[0];
+  }
+
+  const countRows = await sql`SELECT COUNT(*)::int AS count FROM users`;
+  const isFirstUser = Number(countRows[0]?.count || 0) === 0;
+  const id = makeId("user");
+  const { salt, passwordHash } = createPasswordHash(crypto.randomBytes(32).toString("hex"));
+  const createdAt = nowIso();
+  const fullName = String(payload.name || payload.given_name || normalizedEmail.split("@")[0]).trim();
+
+  const rows = await sql`
+    INSERT INTO users (
+      id,
+      full_name,
+      email,
+      birth_date,
+      auth_provider,
+      google_sub,
+      role,
+      subscription_status,
+      password_hash,
+      password_salt,
+      created_at
+    )
+    VALUES (
+      ${id},
+      ${fullName},
+      ${normalizedEmail},
+      ${null},
+      ${"google"},
+      ${payload.sub},
+      ${isFirstUser ? "admin" : "user"},
+      ${isFirstUser ? "active" : "inactive"},
+      ${passwordHash},
+      ${salt},
+      ${createdAt}
+    )
+    RETURNING *
+  `;
+
+  return rows[0];
 };
 
 export const logoutSession = async (token) => {
