@@ -115,6 +115,14 @@ export const AuthProvider = ({ children }) => {
 
   const createPremiumCheckout = async (payload) => base44.auth.createPremiumCheckout(payload);
 
+  const syncPremiumStatus = async () => {
+    const result = await base44.auth.syncPremiumStatus();
+    if (result?.user) {
+      setUser(result.user);
+    }
+    return result;
+  };
+
   const navigateToLogin = () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -139,6 +147,7 @@ export const AuthProvider = ({ children }) => {
         changePassword,
         cancelSubscription,
         createPremiumCheckout,
+        syncPremiumStatus,
         logout,
         navigateToLogin,
         checkAppState: refreshSession,

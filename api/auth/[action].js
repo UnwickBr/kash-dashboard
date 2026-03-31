@@ -14,7 +14,7 @@ import {
   verifyGoogleCredential,
   verifyPassword,
 } from "../_lib/auth.js";
-import { asaasRequest, buildCheckoutUrl, ensureAsaasCustomer } from "../_lib/asaas.js";
+import { asaasRequest, buildCheckoutUrl, syncPremiumByAsaasCustomer, upsertAsaasCustomer } from "../_lib/asaas.js";
 import { issueEmailVerificationToken, sendVerificationEmail } from "../_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "../_lib/utils.js";
 
@@ -240,7 +240,7 @@ const handlers = {
 
     await ensureSchema();
     const sql = getSql();
-    await ensureAsaasCustomer(user);
+    const customerId = await upsertAsaasCustomer(user, payer);
     const inferredAppUrl = req.headers.origin || `https://${req.headers.host}`;
     const appUrl = (process.env.APP_URL || inferredAppUrl || "").replace(/\/$/, "");
     const now = new Date();
@@ -265,7 +265,7 @@ const handlers = {
             value: 20,
           },
         ],
-        customerData: payer,
+        customer: customerId,
         subscription: {
           cycle: "MONTHLY",
           nextDueDate: toAsaasDateTime(nextDueDate),
@@ -296,6 +296,21 @@ const handlers = {
       success: true,
       checkoutId: checkout.id,
       checkoutUrl,
+    });
+  },
+
+  async "sync-premium-status"(req, res) {
+    if (req.method !== "POST") {
+      return sendJson(res, 405, { message: "Method not allowed" });
+    }
+
+    const user = await requireAuth(req);
+    const syncedUser = await syncPremiumByAsaasCustomer(user.asaas_customer_id);
+
+    return sendJson(res, 200, {
+      success: true,
+      user: syncedUser ? sanitizeUser(syncedUser) : sanitizeUser(user),
+      activated: Boolean(syncedUser),
     });
   },
 

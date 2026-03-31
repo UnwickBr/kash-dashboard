@@ -100,6 +100,66 @@ export const ensureAsaasCustomer = async (user) => {
   return createdCustomer.id;
 };
 
+export const upsertAsaasCustomer = async (user, customerData) => {
+  await ensureSchema();
+  const sql = getSql();
+
+  const payload = {
+    name: customerData.name,
+    email: customerData.email,
+    cpfCnpj: customerData.cpfCnpj,
+    phone: customerData.phone,
+    postalCode: customerData.postalCode,
+    address: customerData.address,
+    addressNumber: customerData.addressNumber,
+    province: customerData.province,
+    city: customerData.city,
+    state: customerData.state,
+  };
+
+  if (user.asaas_customer_id) {
+    await asaasRequest(`/customers/${user.asaas_customer_id}`, {
+      method: "PUT",
+      body: payload,
+    });
+    return user.asaas_customer_id;
+  }
+
+  const createdCustomer = await asaasRequest("/customers", {
+    method: "POST",
+    body: payload,
+  });
+
+  await sql`
+    UPDATE users
+    SET asaas_customer_id = ${createdCustomer.id}
+    WHERE id = ${user.id}
+  `;
+
+  return createdCustomer.id;
+};
+
+export const syncPremiumByAsaasCustomer = async (customerId) => {
+  if (!customerId) {
+    return null;
+  }
+
+  const payments = await asaasRequest(`/payments?customer=${encodeURIComponent(customerId)}&limit=20`);
+  const paidPayment = payments?.data?.find((payment) =>
+    ["CONFIRMED", "RECEIVED"].includes(payment.status)
+  );
+
+  if (!paidPayment) {
+    return null;
+  }
+
+  return activatePremiumByAsaasCustomer({
+    customerId,
+    subscriptionId: paidPayment.subscription,
+    paidAt: paidPayment.paymentDate || paidPayment.clientPaymentDate || paidPayment.confirmedDate || new Date().toISOString(),
+  });
+};
+
 export const activatePremiumByAsaasCustomer = async ({ customerId, subscriptionId, paidAt }) => {
   if (!customerId) {
     return null;

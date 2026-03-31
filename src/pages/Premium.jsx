@@ -30,13 +30,14 @@ const features = [
 ];
 
 export default function Premium() {
-  const { currentUser, cancelSubscription, createPremiumCheckout } = useAuth();
+  const { currentUser, cancelSubscription, createPremiumCheckout, syncPremiumStatus } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [loadingCancel, setLoadingCancel] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
+  const [loadingSync, setLoadingSync] = useState(false);
 
   const isPremium = Boolean(currentUser?.has_premium_access);
   const cancellationScheduled = Boolean(currentUser?.subscription_canceled_at && currentUser?.subscription_expires_at);
@@ -112,6 +113,27 @@ export default function Premium() {
         description: error.message || "Tente novamente em instantes.",
       });
       setLoadingCheckout(false);
+    }
+  };
+
+  const handleSyncPremium = async () => {
+    setLoadingSync(true);
+    try {
+      const result = await syncPremiumStatus();
+      toast({
+        title: result.activated ? "Premium liberado" : "Pagamento ainda nao localizado",
+        description: result.activated
+          ? "Seu acesso premium foi ativado com sucesso."
+          : "Se voce acabou de pagar, aguarde alguns instantes e tente novamente.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Nao foi possivel verificar o pagamento",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setLoadingSync(false);
     }
   };
 
@@ -193,6 +215,14 @@ export default function Premium() {
             disabled={loadingCheckout}
           >
             <Crown className="h-4 w-4 mr-2" /> Assinar Agora
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full rounded-xl font-semibold text-base h-12"
+            onClick={handleSyncPremium}
+            disabled={loadingSync}
+          >
+            {loadingSync ? "Verificando..." : "Ja paguei, verificar acesso"}
           </Button>
           <p className="text-xs opacity-60">Pagamento seguro · renovacao automatica mensal</p>
         </motion.div>

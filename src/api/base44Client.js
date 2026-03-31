@@ -137,6 +137,11 @@ export const base44 = {
         body: payload,
       });
     },
+    async syncPremiumStatus() {
+      return request("/api/auth/sync-premium-status", {
+        method: "POST",
+      });
+    },
     async logout() {
       try {
         await request("/api/auth/logout", { method: "POST" });
