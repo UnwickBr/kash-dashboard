@@ -44,8 +44,11 @@ export default function BudgetCard({ budget, spent, onDelete }) {
         </div>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <button className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 transition-all">
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-xl opacity-100 transition-all hover:bg-destructive/10 md:h-8 md:w-8 md:rounded-lg md:opacity-0 md:group-hover:opacity-100"
+              aria-label={`Excluir orçamento de ${budget.category}`}
+            >
+              <Trash2 className="h-4 w-4 text-destructive md:h-3.5 md:w-3.5" />
             </button>
           </AlertDialogTrigger>
           <AlertDialogContent>

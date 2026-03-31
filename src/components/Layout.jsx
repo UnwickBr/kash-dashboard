@@ -51,6 +51,17 @@ export default function Layout() {
     }
   }, [dark]);
 
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
   const toggleDark = () => setDark((current) => !current);
 
   return (
@@ -130,23 +141,37 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
         <h1 className="text-lg font-bold tracking-tight">
           <span className="text-blue-500">Kash</span><span className="text-foreground"> Dashboard</span>
         </h1>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg hover:bg-secondary">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary"
+          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
+        >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed top-14 left-0 right-0 z-40 bg-card border-b border-border p-4 shadow-lg"
-          >
+          <>
+            <motion.button
+              type="button"
+              aria-label="Fechar menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileOpen(false)}
+              className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="lg:hidden fixed top-[calc(4.5rem+env(safe-area-inset-top))] left-3 right-3 z-40 rounded-2xl bg-card border border-border p-3 shadow-lg"
+            >
             <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const active = location.pathname === item.path;
@@ -155,7 +180,7 @@ export default function Layout() {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                       active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                     }`}
                   >
@@ -167,7 +192,7 @@ export default function Layout() {
               <Link
                 to="/meu-perfil"
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   location.pathname === "/meu-perfil"
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
@@ -180,7 +205,7 @@ export default function Layout() {
                 <Link
                   to="/admin"
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                     location.pathname === "/admin" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   }`}
                 >
@@ -194,13 +219,14 @@ export default function Layout() {
                   setMobileOpen(false);
                   logout();
                 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+                className="flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
               >
                 <LogOut className="h-4 w-4" />
                 Sair
               </button>
             </nav>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 

@@ -214,14 +214,21 @@ export default function Savings() {
                       {item.description && <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[120px]">{item.description}</p>}
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditItem(item)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-                      <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  <div className="flex gap-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                    <button
+                      onClick={() => setEditItem(item)}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-secondary transition-colors md:h-8 md:w-8 md:rounded-lg"
+                      aria-label={`Editar ${item.name}`}
+                    >
+                      <Pencil className="h-4 w-4 text-muted-foreground md:h-3.5 md:w-3.5" />
                     </button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        <button
+                          className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors md:h-8 md:w-8 md:rounded-lg"
+                          aria-label={`Excluir ${item.name}`}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive md:h-3.5 md:w-3.5" />
                         </button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>

@@ -213,8 +213,11 @@ export default function ShoppingList() {
   const ItemRow = ({ item }) => (
     <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -20 }}
       className={`flex items-center gap-3 p-3 rounded-xl border transition-all group ${item.checked ? "bg-muted/40 border-border/40 opacity-60" : "bg-card border-border"}`}>
-      <button onClick={() => handleToggle(item)}
-        className={`h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${item.checked ? "bg-primary border-primary" : "border-border hover:border-primary"}`}>
+      <button
+        onClick={() => handleToggle(item)}
+        className={`flex h-10 w-10 items-center justify-center rounded-full border-2 shrink-0 transition-all ${item.checked ? "bg-primary border-primary" : "border-border hover:border-primary"}`}
+        aria-label={item.checked ? `Desmarcar ${item.name}` : `Marcar ${item.name}`}
+      >
         {item.checked && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
       </button>
       <div className="flex-1 min-w-0">
@@ -226,14 +229,21 @@ export default function ShoppingList() {
           R$ {(item.price * item.quantity).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </p>
       )}
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <button onClick={() => setEditItem(item)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+      <div className="flex gap-1 opacity-100 transition-opacity shrink-0 md:opacity-0 md:group-hover:opacity-100">
+        <button
+          onClick={() => setEditItem(item)}
+          className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-secondary transition-colors md:h-8 md:w-8 md:rounded-lg"
+          aria-label={`Editar ${item.name}`}
+        >
+          <Pencil className="h-4 w-4 text-muted-foreground md:h-3.5 md:w-3.5" />
         </button>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <button className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            <button
+              className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors md:h-8 md:w-8 md:rounded-lg"
+              aria-label={`Remover ${item.name}`}
+            >
+              <Trash2 className="h-4 w-4 text-destructive md:h-3.5 md:w-3.5" />
             </button>
           </AlertDialogTrigger>
           <AlertDialogContent>
