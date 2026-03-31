@@ -35,6 +35,12 @@ Para testar login, cadastro e persistência do Neon localmente, use `npm run dev
 - O callback usado pela aplicação é `/api/google-calendar/callback`.
 - Os lembretes podem ser sincronizados com o calendário apenas para contas conectadas com Google.
 
+**Envio de Email**
+
+- Para enviar emails pelo Gmail, configure `GMAIL_USER` e `GMAIL_APP_PASSWORD`.
+- Se quiser personalizar o remetente, configure também `GMAIL_FROM_EMAIL`.
+- O ideal é usar uma senha de app do Google, não a senha normal da conta.
+
 **Banco de dados**
 
 O projeto cria/usa estas estruturas:

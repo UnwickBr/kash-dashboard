@@ -1,22 +1,41 @@
 import crypto from "node:crypto";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { ensureSchema, getSql } from "./db.js";
 import { nowIso } from "./utils.js";
 
-let resendClient = null;
+let mailer = null;
 
-const getResend = () => {
-  if (!process.env.RESEND_API_KEY) {
-    const error = new Error("RESEND_API_KEY não configurada.");
+const getMailer = () => {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    const error = new Error("GMAIL_USER ou GMAIL_APP_PASSWORD não configurados.");
     error.status = 500;
     throw error;
   }
 
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY);
+  if (!mailer) {
+    mailer = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
   }
 
-  return resendClient;
+  return mailer;
+};
+
+const getFromEmail = () => process.env.GMAIL_FROM_EMAIL || `Kash Dashboard <${process.env.GMAIL_USER}>`;
+
+const sendMail = async ({ to, replyTo, subject, html }) => {
+  const transporter = getMailer();
+  await transporter.sendMail({
+    from: getFromEmail(),
+    to,
+    replyTo,
+    subject,
+    html,
+  });
 };
 
 const getAppBaseUrl = (req) => {
@@ -53,13 +72,10 @@ export const issueEmailVerificationToken = async (userId) => {
 };
 
 export const sendVerificationEmail = async (req, user, token) => {
-  const resend = getResend();
   const appUrl = getAppBaseUrl(req);
   const verificationUrl = `${appUrl}/#/verificar-email?token=${token}`;
-  const from = process.env.RESEND_FROM_EMAIL || "Kash Dashboard <onboarding@resend.dev>";
 
-  await resend.emails.send({
-    from,
+  await sendMail({
     to: user.email,
     subject: "Confirme seu email para ativar sua conta",
     html: `
@@ -81,9 +97,7 @@ export const sendVerificationEmail = async (req, user, token) => {
 };
 
 export const sendReminderDigestEmail = async (user, remindersByStage) => {
-  const resend = getResend();
   const appUrl = getAppBaseUrl();
-  const from = process.env.RESEND_FROM_EMAIL || "Kash Dashboard <onboarding@resend.dev>";
   const remindersUrl = `${appUrl}/#/lembretes`;
   const sections = [
     { key: "upcoming", title: "Vencem amanhã" },
@@ -119,8 +133,7 @@ export const sendReminderDigestEmail = async (user, remindersByStage) => {
     .filter(Boolean)
     .join("");
 
-  await resend.emails.send({
-    from,
+  await sendMail({
     to: user.email,
     subject: "Seus lembretes do Kash Dashboard",
     html: `
@@ -141,12 +154,9 @@ export const sendReminderDigestEmail = async (user, remindersByStage) => {
 };
 
 export const sendSupportEmail = async ({ name, email, subject, message }) => {
-  const resend = getResend();
-  const from = process.env.RESEND_FROM_EMAIL || "Kash Dashboard <onboarding@resend.dev>";
   const supportEmail = "kashdashboard@gmail.com";
 
-  await resend.emails.send({
-    from,
+  await sendMail({
     to: supportEmail,
     replyTo: email,
     subject: `[Contato Kash] ${subject}`,
