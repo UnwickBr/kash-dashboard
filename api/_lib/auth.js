@@ -35,7 +35,10 @@ export const hasPremiumAccess = (user) => {
   if (user.role === "admin") {
     return true;
   }
-  const premiumFlag = user.role === "premium" || user.subscription_status === "active";
+  const premiumFlag =
+    user.role === "premium" ||
+    user.subscription_status === "active" ||
+    user.subscription_status === "trialing";
   if (!premiumFlag) {
     return false;
   }

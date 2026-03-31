@@ -30,7 +30,7 @@ const features = [
 ];
 
 export default function Premium() {
-  const { currentUser, cancelSubscription, createPremiumCheckout, syncPremiumStatus } = useAuth();
+  const { currentUser, cancelSubscription, createPremiumCheckout, activatePremiumTrial, syncPremiumStatus } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [loadingCancel, setLoadingCancel] = useState(false);
@@ -40,6 +40,7 @@ export default function Premium() {
   const [loadingSync, setLoadingSync] = useState(false);
 
   const isPremium = Boolean(currentUser?.has_premium_access);
+  const isTrialing = currentUser?.subscription_status === "trialing";
   const cancellationScheduled = Boolean(currentUser?.subscription_canceled_at && currentUser?.subscription_expires_at);
   const canCancel = isPremium && currentUser?.role !== "admin" && !cancellationScheduled;
   const accessEndsLabel = currentUser?.subscription_expires_at
@@ -55,10 +56,26 @@ export default function Premium() {
     }
 
     if (checkoutStatus === "success") {
-      toast({
-        title: "Pagamento iniciado",
-        description: "Assim que o Asaas confirmar o pagamento, seu plano premium será ativado automaticamente.",
-      });
+      (async () => {
+        try {
+          const result = await activatePremiumTrial();
+          toast({
+            title: result.activated ? "Teste grátis ativado" : "Checkout concluído",
+            description: result.activated
+              ? "Seu acesso premium está liberado por 7 dias. A primeira cobrança de R$ 20 será feita após esse período."
+              : "Seu checkout foi concluído. Se o teste não aparecer imediatamente, atualize a página em instantes.",
+          });
+        } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Checkout concluído, mas o teste ainda não foi liberado",
+            description: error.message || "Tente atualizar a página em instantes.",
+          });
+        } finally {
+          navigate("/premium", { replace: true });
+        }
+      })();
+      return;
     }
 
     if (checkoutStatus === "cancel") {
@@ -77,7 +94,7 @@ export default function Premium() {
     }
 
     navigate("/premium", { replace: true });
-  }, [location.search, navigate]);
+  }, [activatePremiumTrial, location.search, navigate]);
 
   const handleCancelSubscription = async () => {
     setLoadingCancel(true);
@@ -155,11 +172,13 @@ export default function Premium() {
         >
           <div>
             <Crown className="h-8 w-8 text-amber-500 mx-auto mb-3" />
-            <p className="text-lg font-bold">Você já é Premium!</p>
+            <p className="text-lg font-bold">{isTrialing ? "Seu teste grátis está ativo!" : "Você já é Premium!"}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              {cancellationScheduled && accessEndsLabel
-                ? `Seu cancelamento foi agendado. O acesso premium continua liberado até ${accessEndsLabel}.`
-                : "Aproveite todos os recursos desbloqueados."}
+              {isTrialing && accessEndsLabel
+                ? `Seu acesso premium está liberado até ${accessEndsLabel}. Depois disso, o cartão cadastrado passa a ser cobrado em R$ 20 por mês.`
+                : cancellationScheduled && accessEndsLabel
+                  ? `Seu cancelamento foi agendado. O acesso premium continua liberado até ${accessEndsLabel}.`
+                  : "Aproveite todos os recursos desbloqueados."}
             </p>
           </div>
 
@@ -204,17 +223,17 @@ export default function Premium() {
           className="bg-primary rounded-2xl p-6 text-primary-foreground text-center space-y-4"
         >
           <p className="text-xs font-semibold uppercase tracking-wider opacity-70">Plano Premium</p>
-          <div>
-            <span className="text-5xl font-bold">R$ 20</span>
-            <span className="text-lg opacity-70">/mês</span>
+          <div className="space-y-2">
+            <span className="text-5xl font-bold block">7 dias grátis</span>
+            <span className="text-lg opacity-80">Depois, R$ 20/mês</span>
           </div>
-          <p className="text-sm opacity-80">Cancele quando quiser. Sem compromisso.</p>
+          <p className="text-sm opacity-80">Adicione o cartão agora e cancele quando quiser.</p>
           <Button
             className="w-full bg-white text-primary hover:bg-white/90 rounded-xl font-bold text-base h-12"
             onClick={() => setCheckoutDialogOpen(true)}
             disabled={loadingCheckout}
           >
-            <Crown className="h-4 w-4 mr-2" /> Assinar Agora
+            <Crown className="h-4 w-4 mr-2" /> Começar teste grátis
           </Button>
           <Button
             variant="secondary"
@@ -224,7 +243,7 @@ export default function Premium() {
           >
             {loadingSync ? "Verificando..." : "Já paguei, verificar acesso"}
           </Button>
-          <p className="text-xs opacity-60">Pagamento seguro · renovação automática mensal</p>
+          <p className="text-xs opacity-70">Pagamento seguro · 7 dias grátis · renovação automática mensal de R$ 20</p>
         </motion.div>
       )}
 

@@ -137,6 +137,11 @@ export const base44 = {
         body: payload,
       });
     },
+    async activatePremiumTrial() {
+      return request("/api/auth/activate-premium-trial", {
+        method: "POST",
+      });
+    },
     async syncPremiumStatus() {
       return request("/api/auth/sync-premium-status", {
         method: "POST",

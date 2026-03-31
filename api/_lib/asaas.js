@@ -1,6 +1,8 @@
 import { getSql, ensureSchema } from "./db.js";
 
 const DEFAULT_ASAAS_BASE_URL = "https://api-sandbox.asaas.com/v3";
+const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+const FREE_TRIAL_DAYS = 7;
 
 const inferCheckoutHost = (baseUrl) => {
   if (baseUrl.includes("api-sandbox.asaas.com")) {
@@ -174,6 +176,41 @@ export const syncPremiumByAsaasCustomer = async (customerId) => {
   });
 };
 
+export const activateTrialByAsaasCustomer = async (customerId) => {
+  if (!customerId) {
+    return null;
+  }
+
+  const subscriptions = await asaasRequest(`/subscriptions?customer=${encodeURIComponent(customerId)}&limit=20`);
+  const latestSubscription = subscriptions?.data?.find((subscription) =>
+    !["INACTIVE", "EXPIRED", "REMOVED"].includes(String(subscription.status || "").toUpperCase())
+  );
+
+  if (!latestSubscription) {
+    return null;
+  }
+
+  await ensureSchema();
+  const sql = getSql();
+  const startedAt = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  const rows = await sql`
+    UPDATE users
+    SET
+      subscription_status = 'trialing',
+      role = CASE WHEN role = 'user' THEN 'premium' ELSE role END,
+      subscription_started_at = COALESCE(subscription_started_at, ${startedAt}),
+      subscription_expires_at = ${expiresAt},
+      subscription_canceled_at = NULL,
+      asaas_subscription_id = COALESCE(${latestSubscription.id || null}, asaas_subscription_id)
+    WHERE asaas_customer_id = ${customerId}
+    RETURNING *
+  `;
+
+  return rows[0] || null;
+};
+
 export const activatePremiumByAsaasCustomer = async ({ customerId, subscriptionId, paidAt }) => {
   if (!customerId) {
     return null;
@@ -182,7 +219,7 @@ export const activatePremiumByAsaasCustomer = async ({ customerId, subscriptionI
   await ensureSchema();
   const sql = getSql();
   const startedAt = paidAt || new Date().toISOString();
-  const expiresAt = new Date(new Date(startedAt).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(new Date(startedAt).getTime() + THIRTY_DAYS_IN_MS).toISOString();
 
   const rows = await sql`
     UPDATE users

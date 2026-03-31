@@ -14,11 +14,18 @@ import {
   verifyGoogleCredential,
   verifyPassword,
 } from "../_lib/auth.js";
-import { asaasRequest, buildCheckoutUrl, syncPremiumByAsaasCustomer, upsertAsaasCustomer } from "../_lib/asaas.js";
+import {
+  activateTrialByAsaasCustomer,
+  asaasRequest,
+  buildCheckoutUrl,
+  syncPremiumByAsaasCustomer,
+  upsertAsaasCustomer,
+} from "../_lib/asaas.js";
 import { issueEmailVerificationToken, sendVerificationEmail } from "../_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "../_lib/utils.js";
 
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
+const FREE_TRIAL_DAYS = 7;
 const toAsaasDateTime = (value) => value.toISOString().slice(0, 19).replace("T", " ");
 
 const handlers = {
@@ -168,7 +175,7 @@ const handlers = {
       throw error;
     }
 
-    if (!user.has_premium_access && user.subscription_status !== "active") {
+    if (!user.has_premium_access && !["active", "trialing"].includes(user.subscription_status)) {
       const error = new Error("Nao ha uma assinatura premium ativa para cancelar.");
       error.status = 400;
       throw error;
@@ -244,7 +251,7 @@ const handlers = {
     const inferredAppUrl = req.headers.origin || `https://${req.headers.host}`;
     const appUrl = (process.env.APP_URL || inferredAppUrl || "").replace(/\/$/, "");
     const now = new Date();
-    const nextDueDate = new Date(now.getTime() + 5 * 60 * 1000);
+    const nextDueDate = new Date(now.getTime() + FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000);
     const endDate = new Date(now.getTime() + 10 * 365 * 24 * 60 * 60 * 1000);
     const checkout = await asaasRequest("/checkouts", {
       method: "POST",
@@ -260,7 +267,7 @@ const handlers = {
         items: [
           {
             name: "Kash Premium",
-            description: "Assinatura mensal do Kash Premium",
+            description: "Teste gratis de 7 dias e depois assinatura mensal do Kash Premium",
             quantity: 1,
             value: 20,
           },
@@ -311,6 +318,21 @@ const handlers = {
       success: true,
       user: syncedUser ? sanitizeUser(syncedUser) : sanitizeUser(user),
       activated: Boolean(syncedUser),
+    });
+  },
+
+  async "activate-premium-trial"(req, res) {
+    if (req.method !== "POST") {
+      return sendJson(res, 405, { message: "Method not allowed" });
+    }
+
+    const user = await requireAuth(req);
+    const trialUser = await activateTrialByAsaasCustomer(user.asaas_customer_id);
+
+    return sendJson(res, 200, {
+      success: true,
+      user: trialUser ? sanitizeUser(trialUser) : sanitizeUser(user),
+      activated: Boolean(trialUser),
     });
   },
 

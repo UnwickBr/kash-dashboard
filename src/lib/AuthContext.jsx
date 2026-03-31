@@ -115,6 +115,14 @@ export const AuthProvider = ({ children }) => {
 
   const createPremiumCheckout = async (payload) => base44.auth.createPremiumCheckout(payload);
 
+  const activatePremiumTrial = async () => {
+    const result = await base44.auth.activatePremiumTrial();
+    if (result?.user) {
+      setUser(result.user);
+    }
+    return result;
+  };
+
   const syncPremiumStatus = async () => {
     const result = await base44.auth.syncPremiumStatus();
     if (result?.user) {
@@ -147,6 +155,7 @@ export const AuthProvider = ({ children }) => {
         changePassword,
         cancelSubscription,
         createPremiumCheckout,
+        activatePremiumTrial,
         syncPremiumStatus,
         logout,
         navigateToLogin,
