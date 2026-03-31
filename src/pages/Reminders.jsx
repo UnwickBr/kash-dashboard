@@ -43,9 +43,18 @@ export default function Reminders() {
   const load = async () => {
     if (!currentUser?.email) return;
     setLoading(true);
-    const data = await base44.entities.PaymentReminder.filter({ created_by: currentUser.email }, "due_date", 200);
-    setReminders(data);
-    setLoading(false);
+    try {
+      const data = await base44.entities.PaymentReminder.filter({ created_by: currentUser.email }, "due_date", 200);
+      setReminders(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível carregar os lembretes",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -76,31 +85,63 @@ export default function Reminders() {
       }
 
       navigate("/lembretes", { replace: true });
-    })();
+    })().catch((error) => {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível concluir a conexão com a agenda",
+        description: error.message || "Tente novamente em instantes.",
+      });
+      navigate("/lembretes", { replace: true });
+    });
   }, [checkAppState, navigate, searchParams]);
 
   const handleAdd = async (event) => {
     event.preventDefault();
     setSaving(true);
-    await base44.entities.PaymentReminder.create({
-      ...form,
-      amount: form.amount ? parseFloat(form.amount) : null,
-      paid: false,
-    });
-    setSaving(false);
-    setAddOpen(false);
-    setForm(emptyForm);
-    load();
+    try {
+      await base44.entities.PaymentReminder.create({
+        ...form,
+        amount: form.amount ? parseFloat(form.amount) : null,
+        paid: false,
+      });
+      setAddOpen(false);
+      setForm(emptyForm);
+      await load();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível salvar o lembrete",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTogglePaid = async (reminder) => {
-    await base44.entities.PaymentReminder.update(reminder.id, { paid: !reminder.paid });
-    load();
+    try {
+      await base44.entities.PaymentReminder.update(reminder.id, { paid: !reminder.paid });
+      await load();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível atualizar o lembrete",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    }
   };
 
   const handleDelete = async (id) => {
-    await base44.entities.PaymentReminder.delete(id);
-    load();
+    try {
+      await base44.entities.PaymentReminder.delete(id);
+      await load();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível remover o lembrete",
+        description: error.message || "Tente novamente em instantes.",
+      });
+    }
   };
 
   const getUrgency = (reminder) => {

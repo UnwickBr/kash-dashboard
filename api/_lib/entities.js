@@ -53,7 +53,12 @@ export const createUserRecord = async (req, user, entityName, payload) => {
   };
 
   if (entityName === "PaymentReminder") {
-    return syncReminderToGoogleCalendar(req, user, createdRecord);
+    try {
+      return await syncReminderToGoogleCalendar(req, user, createdRecord);
+    } catch (error) {
+      console.error("Google Calendar sync failed on create:", error);
+      return createdRecord;
+    }
   }
 
   return createdRecord;
@@ -104,7 +109,12 @@ export const updateUserRecord = async (req, user, entityName, id, payload) => {
   };
 
   if (entityName === "PaymentReminder") {
-    return syncReminderToGoogleCalendar(req, user, updatedRecord);
+    try {
+      return await syncReminderToGoogleCalendar(req, user, updatedRecord);
+    } catch (error) {
+      console.error("Google Calendar sync failed on update:", error);
+      return updatedRecord;
+    }
   }
 
   return updatedRecord;
@@ -123,7 +133,11 @@ export const deleteUserRecord = async (req, user, entityName, id) => {
   `;
 
   if (rows.length && entityName === "PaymentReminder") {
-    await deleteReminderFromGoogleCalendar(req, user, normalizeRecord(rows[0]));
+    try {
+      await deleteReminderFromGoogleCalendar(req, user, normalizeRecord(rows[0]));
+    } catch (error) {
+      console.error("Google Calendar sync failed on delete:", error);
+    }
   }
 
   await sql`
