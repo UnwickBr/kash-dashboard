@@ -81,15 +81,37 @@ export default function Dashboard() {
   }, [filteredTransactions]);
 
   const spendingByCategory = useMemo(() => {
-    const map = {};
+    const expenses = filteredTransactions.filter((transaction) => transaction.type === "despesa");
+    const categorySet = new Set();
+    const dayMap = new Map();
 
-    filteredTransactions
-      .filter((transaction) => transaction.type === "despesa")
-      .forEach((transaction) => {
-        map[transaction.category] = (map[transaction.category] || 0) + transaction.amount;
+    expenses.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      const key = format(date, "yyyy-MM-dd");
+      const label = format(date, "dd/MM", { locale: ptBR });
+
+      categorySet.add(transaction.category);
+
+      if (!dayMap.has(key)) {
+        dayMap.set(key, { key, label, sortKey: date.getTime() });
+      }
+
+      const entry = dayMap.get(key);
+      entry[transaction.category] = (entry[transaction.category] || 0) + transaction.amount;
+    });
+
+    const categories = Array.from(categorySet);
+    const data = Array.from(dayMap.values())
+      .sort((left, right) => left.sortKey - right.sortKey)
+      .map((entry) => {
+        const normalized = { label: entry.label };
+        categories.forEach((category) => {
+          normalized[category] = entry[category] || 0;
+        });
+        return normalized;
       });
 
-    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+    return { data, categories };
   }, [filteredTransactions]);
 
   const monthlyData = useMemo(() => {
@@ -212,7 +234,7 @@ export default function Dashboard() {
           className="bg-card rounded-2xl border border-border p-5 sm:p-6"
         >
           <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Gastos por Categoria</h3>
-          <SpendingChart data={spendingByCategory} />
+          <SpendingChart data={spendingByCategory.data} categories={spendingByCategory.categories} />
         </motion.div>
       </div>
 
