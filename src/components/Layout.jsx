@@ -137,10 +137,10 @@ function NavLinkItem({ item, active, locked, onClick, compact = false }) {
     <Link
       to={item.path}
       onClick={onClick}
-      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
         active
           ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       } ${compact ? "min-h-12 rounded-xl" : ""}`}
     >
       <item.icon className="h-4 w-4 shrink-0" />
@@ -190,27 +190,19 @@ export default function Layout() {
   const isPremiumUser = Boolean(currentUser?.has_premium_access);
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <aside className="hidden lg:flex flex-col w-72 border-r border-border bg-card p-6 fixed h-full">
+    <div className="flex min-h-screen bg-background">
+      <aside className="fixed hidden h-full w-72 flex-col border-r border-border bg-card p-6 lg:flex">
         <div className="mb-10 flex items-start justify-between">
           <div className="min-w-0">
-            <img
-              src={kashLogo}
-              alt="Kash Dashboard"
-              className="h-auto w-[210px] max-w-full object-contain"
-            />
-            <p className="text-xs text-muted-foreground mt-2">Gestão financeira pessoal</p>
+            <img src={kashLogo} alt="Kash Dashboard" className="h-auto w-[210px] max-w-full object-contain" />
+            <p className="mt-2 text-xs text-muted-foreground">Gestão financeira pessoal</p>
           </div>
-          <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-secondary transition-colors mt-0.5">
-            {dark ? (
-              <Sun className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <Moon className="h-4 w-4 text-muted-foreground" />
-            )}
+          <button type="button" onClick={toggleDark} className="mt-0.5 rounded-lg p-2 transition-colors hover:bg-secondary">
+            {dark ? <Sun className="h-4 w-4 text-muted-foreground" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
           </button>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
+        <nav className="flex flex-1 flex-col gap-1">
           {navItems.map((item) => (
             <NavLinkItem
               key={item.path}
@@ -222,17 +214,13 @@ export default function Layout() {
         </nav>
 
         {currentUser?.role === "admin" && (
-          <NavLinkItem
-            item={adminItem}
-            active={location.pathname === adminItem.path}
-            locked={false}
-          />
+          <NavLinkItem item={adminItem} active={location.pathname === adminItem.path} locked={false} />
         )}
 
-        <div className="pt-4 border-t border-border space-y-4">
+        <div className="space-y-4 border-t border-border pt-4">
           <div className="rounded-2xl bg-secondary/70 p-3">
-            <p className="text-xs font-semibold text-foreground truncate">{currentUser?.full_name || "Usuário"}</p>
-            <p className="mt-1 text-[11px] text-muted-foreground truncate">{currentUser?.email}</p>
+            <p className="truncate text-xs font-semibold text-foreground">{currentUser?.full_name || "Usuário"}</p>
+            <p className="mt-1 truncate text-[11px] text-muted-foreground">{currentUser?.email}</p>
           </div>
           <Link
             to={contactItem.path}
@@ -244,11 +232,7 @@ export default function Layout() {
           >
             <contactItem.icon className="h-4 w-4" />
             <span>{contactItem.label}</span>
-            <NavInfoButton
-              label={contactItem.label}
-              description={contactItem.description}
-              active={location.pathname === contactItem.path}
-            />
+            <NavInfoButton label={contactItem.label} description={contactItem.description} active={location.pathname === contactItem.path} />
           </Link>
           <Link
             to={profileItem.path}
@@ -260,11 +244,7 @@ export default function Layout() {
           >
             <profileItem.icon className="h-4 w-4" />
             <span>{profileItem.label}</span>
-            <NavInfoButton
-              label={profileItem.label}
-              description={profileItem.description}
-              active={location.pathname === profileItem.path}
-            />
+            <NavInfoButton label={profileItem.label} description={profileItem.description} active={location.pathname === profileItem.path} />
           </Link>
           <button
             type="button"
@@ -274,17 +254,14 @@ export default function Layout() {
             <LogOut className="h-4 w-4" />
             Sair
           </button>
-          <p className="text-[10px] text-muted-foreground text-center">Kash Dashboard (c) 2026</p>
+          <p className="text-center text-[10px] text-muted-foreground">Kash Dashboard (c) 2026</p>
         </div>
       </aside>
 
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <img
-          src={kashLogo}
-          alt="Kash Dashboard"
-          className="h-auto w-[188px] max-w-full object-contain"
-        />
+      <div className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-border bg-card/80 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
+        <img src={kashLogo} alt="Kash Dashboard" className="h-auto w-[188px] max-w-full object-contain" />
         <button
+          type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
           className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-secondary"
           aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
@@ -303,13 +280,13 @@ export default function Layout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px]"
+              className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px] lg:hidden"
             />
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="lg:hidden fixed top-[calc(4.5rem+env(safe-area-inset-top))] left-3 right-3 z-40 rounded-2xl bg-card border border-border p-3 shadow-lg"
+              className="fixed left-3 right-3 top-[calc(4.5rem+env(safe-area-inset-top))] z-40 rounded-2xl border border-border bg-card p-3 shadow-lg lg:hidden"
             >
               <nav className="flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -325,36 +302,28 @@ export default function Layout() {
                 <Link
                   to={contactItem.path}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                     location.pathname === contactItem.path
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   <contactItem.icon className="h-4 w-4" />
                   <span className="flex-1">{contactItem.label}</span>
-                  <NavInfoButton
-                    label={contactItem.label}
-                    description={contactItem.description}
-                    active={location.pathname === contactItem.path}
-                  />
+                  <NavInfoButton label={contactItem.label} description={contactItem.description} active={location.pathname === contactItem.path} />
                 </Link>
                 <Link
                   to={profileItem.path}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                     location.pathname === profileItem.path
                       ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   <profileItem.icon className="h-4 w-4" />
                   <span className="flex-1">{profileItem.label}</span>
-                  <NavInfoButton
-                    label={profileItem.label}
-                    description={profileItem.description}
-                    active={location.pathname === profileItem.path}
-                  />
+                  <NavInfoButton label={profileItem.label} description={profileItem.description} active={location.pathname === profileItem.path} />
                 </Link>
                 {currentUser?.role === "admin" && (
                   <NavLinkItem
@@ -371,7 +340,7 @@ export default function Layout() {
                     setMobileOpen(false);
                     logout();
                   }}
-                  className="flex min-h-12 items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  className="flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
                 >
                   <LogOut className="h-4 w-4" />
                   Sair
@@ -382,8 +351,8 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 lg:ml-72 pt-16 lg:pt-0">
-        <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+      <main className="flex-1 pt-16 lg:ml-72 lg:pt-0">
+        <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>

@@ -1,22 +1,38 @@
 import { ENTITY_NAMES, ensureSchema, getSql } from "./db.js";
+import { hasPremiumAccess } from "./auth.js";
 import { deleteReminderFromGoogleCalendar, syncReminderToGoogleCalendar } from "./google-calendar.js";
 import { makeId, nowIso, normalizeRecord, sortItems, limitItems } from "./utils.js";
 
-export const listUserRecords = async (userId, entityName, sortBy, limit) => {
+const PREMIUM_ENTITIES = new Set(["Budget", "Savings", "PaymentReminder", "ShoppingItem", "PaidList"]);
+
+const assertPremiumEntityAccess = (user, entityName) => {
+  if (!PREMIUM_ENTITIES.has(entityName)) {
+    return;
+  }
+
+  if (!hasPremiumAccess(user)) {
+    const error = new Error("Esse recurso está disponível apenas para usuários premium.");
+    error.status = 403;
+    throw error;
+  }
+};
+
+export const listUserRecords = async (user, entityName, sortBy, limit) => {
+  assertPremiumEntityAccess(user, entityName);
   await ensureSchema();
   const sql = getSql();
   const rows = await sql`
     SELECT id, data, created_at, updated_at
     FROM entity_records
-    WHERE user_id = ${userId}
+    WHERE user_id = ${user.id}
       AND entity_name = ${entityName}
   `;
 
   return limitItems(sortItems(rows.map(normalizeRecord), sortBy), limit);
 };
 
-export const filterUserRecords = async (userId, entityName, query = {}, sortBy, limit) => {
-  const records = await listUserRecords(userId, entityName, sortBy);
+export const filterUserRecords = async (user, entityName, query = {}, sortBy, limit) => {
+  const records = await listUserRecords(user, entityName, sortBy);
   const filtered = records.filter((record) =>
     Object.entries(query).every(([key, value]) => record[key] === value)
   );
@@ -24,6 +40,7 @@ export const filterUserRecords = async (userId, entityName, query = {}, sortBy, 
 };
 
 export const createUserRecord = async (req, user, entityName, payload) => {
+  assertPremiumEntityAccess(user, entityName);
   await ensureSchema();
   const sql = getSql();
   const id = makeId(entityName);
@@ -65,6 +82,7 @@ export const createUserRecord = async (req, user, entityName, payload) => {
 };
 
 export const updateUserRecord = async (req, user, entityName, id, payload) => {
+  assertPremiumEntityAccess(user, entityName);
   await ensureSchema();
   const sql = getSql();
   const rows = await sql`
@@ -121,6 +139,7 @@ export const updateUserRecord = async (req, user, entityName, id, payload) => {
 };
 
 export const deleteUserRecord = async (req, user, entityName, id) => {
+  assertPremiumEntityAccess(user, entityName);
   await ensureSchema();
   const sql = getSql();
   const rows = await sql`

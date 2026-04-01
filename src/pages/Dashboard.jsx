@@ -13,6 +13,7 @@ import TransactionItem from "../components/TransactionItem";
 import SpendingChart from "../components/SpendingChart";
 import MonthlyChart from "../components/MonthlyChart";
 import AddTransactionDialog from "../components/AddTransactionDialog";
+import OnboardingChecklist from "../components/OnboardingChecklist";
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -140,7 +141,7 @@ export default function Dashboard() {
     const now = new Date();
     const next3 = [];
 
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 3; i += 1) {
       const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const monthKey = format(monthDate, "MMM yy", { locale: ptBR });
       const total = transactions
@@ -161,17 +162,12 @@ export default function Dashboard() {
   const recentTransactions = filteredTransactions.slice(0, 5);
   const formatCurrency = (value) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
   const currentHour = new Date().getHours();
-  const greeting =
-    currentHour < 12
-      ? "Bom dia"
-      : currentHour < 18
-        ? "Boa tarde"
-        : "Boa noite";
+  const greeting = currentHour < 12 ? "Bom dia" : currentHour < 18 ? "Boa tarde" : "Boa noite";
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
       </div>
     );
   }
@@ -181,18 +177,16 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
       >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Painel Financeiro</h1>
-          <p className="text-sm sm:text-base font-medium text-primary mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Painel Financeiro</h1>
+          <p className="mt-1 text-sm font-medium text-primary sm:text-base">
             {greeting}, {firstName}
           </p>
-          <p className="text-sm text-muted-foreground mt-1 capitalize">
-            Dados salvos de {selectedMonthLabel}
-          </p>
+          <p className="mt-1 text-sm capitalize text-muted-foreground">Dados salvos de {selectedMonthLabel}</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="min-w-[220px] rounded-xl">
               <SelectValue placeholder="Filtrar mês" />
@@ -211,20 +205,22 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Saldo do Mês" value={formatCurrency(stats.balance)} icon={Wallet} />
+      <OnboardingChecklist user={currentUser} transactionCount={transactions.length} />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard title="Saldo do mês" value={formatCurrency(stats.balance)} icon={Wallet} />
         <StatCard title="Receitas" value={formatCurrency(stats.income)} icon={TrendingUp} />
         <StatCard title="Despesas" value={formatCurrency(stats.expenses)} icon={TrendingDown} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[0.85fr_1.45fr] gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.45fr]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[320px]"
+          className="min-h-[320px] rounded-2xl border border-border bg-card p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Receitas vs Despesas</h3>
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">Receitas vs Despesas</h3>
           <MonthlyChart data={monthlyData} />
         </motion.div>
 
@@ -232,9 +228,9 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6 min-h-[400px]"
+          className="min-h-[400px] rounded-2xl border border-border bg-card p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Gastos por Categoria</h3>
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">Gastos por Categoria</h3>
           <SpendingChart data={spendingByCategory.data} categories={spendingByCategory.categories} />
         </motion.div>
       </div>
@@ -244,14 +240,14 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+          className="rounded-2xl border border-border bg-card p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Parcelas nos Próximos Meses</h3>
-          <div className="flex gap-3 flex-wrap">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">Parcelas nos Próximos Meses</h3>
+          <div className="flex flex-wrap gap-3">
             {futureInstallments.map((item) => (
-              <div key={item.month} className="flex-1 min-w-[100px] bg-secondary/40 rounded-xl p-3">
-                <p className="text-xs font-semibold text-muted-foreground capitalize">{item.month}</p>
-                <p className="text-base font-bold text-foreground mt-1">
+              <div key={item.month} className="min-w-[100px] flex-1 rounded-xl bg-secondary/40 p-3">
+                <p className="text-xs font-semibold capitalize text-muted-foreground">{item.month}</p>
+                <p className="mt-1 text-base font-bold text-foreground">
                   R$ {item.value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
@@ -264,18 +260,16 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+        className="rounded-2xl border border-border bg-card p-5 sm:p-6"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Transações Recentes</h3>
-          <Link to="/transacoes" className="text-xs font-semibold text-primary flex items-center gap-1 hover:underline">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Transações Recentes</h3>
+          <Link to="/transacoes" className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
             Ver todas <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
         {recentTransactions.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Nenhuma transação encontrada para esse período.
-          </p>
+          <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma transação encontrada para esse período.</p>
         ) : (
           <div>
             {recentTransactions.map((transaction) => (

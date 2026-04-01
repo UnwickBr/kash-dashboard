@@ -1,4 +1,5 @@
 import { requireAuth } from "./_lib/auth.js";
+import { logAuditEvent } from "./_lib/audit.js";
 import { sendSupportEmail } from "./_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "./_lib/utils.js";
 
@@ -22,6 +23,15 @@ export default async function handler(req, res) {
     }
 
     await sendSupportEmail({ name, email, subject, message });
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "support.message_sent",
+      entityName: "User",
+      entityId: user.id,
+      message: "Mensagem enviada pela página de contato.",
+      metadata: { subject, fromEmail: email },
+    });
     return sendJson(res, 200, { success: true });
   } catch (error) {
     return handleError(res, error);

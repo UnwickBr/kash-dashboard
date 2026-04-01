@@ -104,6 +104,30 @@ export const ensureSchema = async () => {
         CREATE INDEX IF NOT EXISTS entity_records_user_entity_idx
         ON entity_records (user_id, entity_name)
       `;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+          id TEXT PRIMARY KEY,
+          user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          event_type TEXT NOT NULL,
+          level TEXT NOT NULL DEFAULT 'info',
+          entity_name TEXT,
+          entity_id TEXT,
+          message TEXT NOT NULL,
+          metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+
+      await sql`
+        CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx
+        ON audit_logs (created_at DESC)
+      `;
+
+      await sql`
+        CREATE INDEX IF NOT EXISTS audit_logs_user_id_idx
+        ON audit_logs (user_id)
+      `;
     })();
   }
 

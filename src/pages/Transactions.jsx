@@ -85,8 +85,8 @@ export default function Transactions() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
       </div>
     );
   }
@@ -96,11 +96,11 @@ export default function Transactions() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"
       >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Transações</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Transações</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {transactions.length} transações registradas e salvas no seu histórico
           </p>
         </div>
@@ -111,12 +111,12 @@ export default function Transactions() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-card rounded-2xl border border-border p-4 flex flex-col xl:flex-row gap-3"
+        className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 xl:flex-row"
       >
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pl-9 rounded-xl"
+            className="rounded-xl pl-9"
             placeholder="Buscar transação..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -124,7 +124,7 @@ export default function Transactions() {
         </div>
 
         <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-full xl:w-40 rounded-xl">
+          <SelectTrigger className="w-full rounded-xl xl:w-40">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -135,7 +135,7 @@ export default function Transactions() {
         </Select>
 
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-full xl:w-44 rounded-xl">
+          <SelectTrigger className="w-full rounded-xl xl:w-44">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -149,7 +149,7 @@ export default function Transactions() {
         </Select>
 
         <Select value={filterMonth} onValueChange={setFilterMonth}>
-          <SelectTrigger className="w-full xl:w-52 rounded-xl">
+          <SelectTrigger className="w-full rounded-xl xl:w-52">
             <SelectValue placeholder="Mês" />
           </SelectTrigger>
           <SelectContent>
@@ -167,10 +167,10 @@ export default function Transactions() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-card rounded-2xl border border-border p-5 sm:p-6"
+        className="rounded-2xl border border-border bg-card p-5 sm:p-6"
       >
         {filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">
+          <p className="py-12 text-center text-sm text-muted-foreground">
             {search || filterType !== "all" || filterCategory !== "all" || filterMonth !== "all"
               ? "Nenhuma transação encontrada com esses filtros."
               : "Nenhuma transação registrada ainda."}
@@ -178,7 +178,7 @@ export default function Transactions() {
         ) : (
           <div>
             {filtered.map((transaction) => (
-              <div key={transaction.id} className="flex items-center gap-2 group">
+              <div key={transaction.id} className="group flex items-center gap-2">
                 <div className="flex-1">
                   <TransactionItem transaction={transaction} />
                 </div>

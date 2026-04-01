@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     }
 
     assertValidEntity(entityName);
-    return sendJson(res, 200, await filterUserRecords(user.id, entityName, query, sortBy, limit));
+    return sendJson(res, 200, await filterUserRecords(user, entityName, query, sortBy, limit));
   } catch (error) {
     return handleError(res, error);
   }

@@ -1,5 +1,6 @@
 import { ensureSchema, getSql } from "../../_lib/db.js";
 import { getTokenFromRequest, logoutSession, requireAuth, requireAdmin, sanitizeUser } from "../../_lib/auth.js";
+import { logAuditEvent } from "../../_lib/audit.js";
 import { assertValidEntity, deleteUserRecord, updateUserRecord } from "../../_lib/entities.js";
 import { handleError, parseJsonBody, sendJson } from "../../_lib/utils.js";
 
@@ -45,11 +46,34 @@ export default async function handler(req, res) {
         if (!rows.length) {
           return sendJson(res, 404, { message: "Usuário não encontrado." });
         }
+
+        await logAuditEvent({
+          req,
+          userId: user.id,
+          eventType: "admin.user_updated",
+          entityName: "User",
+          entityId: id,
+          message: "Administrador atualizou um usuário.",
+          metadata: {
+            changedRole: body.role ?? null,
+            changedSubscriptionStatus: body.subscription_status ?? null,
+          },
+        });
+
         return sendJson(res, 200, sanitizeUser(rows[0]));
       }
 
       if (req.method === "DELETE") {
         await sql`DELETE FROM users WHERE id = ${id}`;
+        await logAuditEvent({
+          req,
+          userId: user.id,
+          eventType: "admin.user_deleted",
+          entityName: "User",
+          entityId: id,
+          level: "warning",
+          message: "Administrador removeu um usuário.",
+        });
         if (id === user.id) {
           await logoutSession(getTokenFromRequest(req));
         }

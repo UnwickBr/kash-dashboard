@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       }
 
       assertValidEntity(entityName);
-      return sendJson(res, 200, await listUserRecords(user.id, entityName, sortBy, limit));
+      return sendJson(res, 200, await listUserRecords(user, entityName, sortBy, limit));
     }
 
     if (req.method === "POST") {

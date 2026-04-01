@@ -5,6 +5,7 @@ import {
   findOrCreateGoogleUser,
   findUnverifiedUserByEmail,
   getTokenFromRequest,
+  hasPremiumAccess,
   loginUser,
   logoutSession,
   registerUser,
@@ -21,6 +22,7 @@ import {
   syncPremiumByAsaasCustomer,
   upsertAsaasCustomer,
 } from "../_lib/asaas.js";
+import { logAuditEvent } from "../_lib/audit.js";
 import { issueEmailVerificationToken, sendVerificationEmail } from "../_lib/email.js";
 import { handleError, parseJsonBody, sendJson } from "../_lib/utils.js";
 
@@ -38,6 +40,15 @@ const handlers = {
     const user = await registerUser(body);
     const verificationToken = await issueEmailVerificationToken(user.id);
     await sendVerificationEmail(req, user, verificationToken);
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.registered",
+      entityName: "User",
+      entityId: user.id,
+      message: "Novo usuário cadastrado e email de verificação enviado.",
+      metadata: { authProvider: user.auth_provider, email: user.email },
+    });
     return sendJson(res, 201, {
       success: true,
       requiresVerification: true,
@@ -53,6 +64,14 @@ const handlers = {
     const body = await parseJsonBody(req);
     const user = await loginUser(body);
     const token = await createSession(user.id);
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.login",
+      entityName: "User",
+      entityId: user.id,
+      message: "Login por email realizado com sucesso.",
+    });
     return sendJson(res, 200, { token, user: sanitizeUser(user) });
   },
 
@@ -65,6 +84,15 @@ const handlers = {
     const payload = await verifyGoogleCredential(body.credential);
     const user = await findOrCreateGoogleUser(payload);
     const token = await createSession(user.id);
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.google_login",
+      entityName: "User",
+      entityId: user.id,
+      message: "Login com Google realizado com sucesso.",
+      metadata: { email: user.email },
+    });
     return sendJson(res, 200, { token, user: sanitizeUser(user) });
   },
 
@@ -82,8 +110,17 @@ const handlers = {
       return sendJson(res, 405, { message: "Method not allowed" });
     }
 
-    await requireAuth(req);
-    await logoutSession(getTokenFromRequest(req));
+    const user = await requireAuth(req);
+    const token = getTokenFromRequest(req);
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.logout",
+      entityName: "User",
+      entityId: user.id,
+      message: "Sessão encerrada pelo usuário.",
+    });
+    await logoutSession(token);
     return sendJson(res, 200, { success: true });
   },
 
@@ -113,6 +150,16 @@ const handlers = {
       WHERE id = ${user.id}
       RETURNING *
     `;
+
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "profile.updated",
+      entityName: "User",
+      entityId: user.id,
+      message: "Perfil atualizado pelo usuário.",
+      metadata: { changedBirthDate: Boolean(nextBirthDate), changedFullName: Boolean(nextFullName) },
+    });
 
     return sendJson(res, 200, sanitizeUser(rows[0]));
   },
@@ -144,7 +191,7 @@ const handlers = {
 
     const storedUser = rows[0];
     if (!storedUser || !verifyPassword(currentPassword, storedUser)) {
-      const error = new Error("A senha atual esta incorreta.");
+      const error = new Error("A senha atual está incorreta.");
       error.status = 400;
       throw error;
     }
@@ -159,6 +206,15 @@ const handlers = {
       WHERE id = ${user.id}
     `;
 
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.password_changed",
+      entityName: "User",
+      entityId: user.id,
+      message: "Senha alterada com sucesso.",
+    });
+
     return sendJson(res, 200, { success: true });
   },
 
@@ -170,13 +226,13 @@ const handlers = {
     const user = await requireAuth(req);
 
     if (user.role === "admin") {
-      const error = new Error("Administradores nao podem cancelar a assinatura por esta tela.");
+      const error = new Error("Administradores não podem cancelar a assinatura por esta tela.");
       error.status = 400;
       throw error;
     }
 
-    if (!user.has_premium_access && !["active", "trialing"].includes(user.subscription_status)) {
-      const error = new Error("Nao ha uma assinatura premium ativa para cancelar.");
+    if (!hasPremiumAccess(user) && !["active", "trialing"].includes(user.subscription_status)) {
+      const error = new Error("Não há uma assinatura premium ativa para cancelar.");
       error.status = 400;
       throw error;
     }
@@ -199,6 +255,16 @@ const handlers = {
       RETURNING *
     `;
 
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "subscription.cancellation_scheduled",
+      entityName: "User",
+      entityId: user.id,
+      message: "Cancelamento de assinatura agendado para o fim do ciclo atual.",
+      metadata: { subscriptionExpiresAt: rows[0]?.subscription_expires_at || cycleEndsAt },
+    });
+
     return sendJson(res, 200, { success: true, user: sanitizeUser(rows[0]) });
   },
 
@@ -209,8 +275,8 @@ const handlers = {
 
     const user = await requireAuth(req);
 
-    if (user.has_premium_access) {
-      const error = new Error("Sua conta ja possui acesso premium ativo.");
+    if (hasPremiumAccess(user)) {
+      const error = new Error("Sua conta já possui acesso premium ativo.");
       error.status = 400;
       throw error;
     }
@@ -267,7 +333,7 @@ const handlers = {
         items: [
           {
             name: "Kash Premium",
-            description: "Teste gratis de 7 dias e depois assinatura mensal do Kash Premium",
+            description: "Teste grátis de 7 dias e depois assinatura mensal do Kash Premium",
             quantity: 1,
             value: 20,
           },
@@ -288,7 +354,7 @@ const handlers = {
       (checkout.id ? buildCheckoutUrl(checkout.id) : null);
 
     if (!checkoutUrl) {
-      const error = new Error("O Asaas nao retornou uma URL valida para o checkout.");
+      const error = new Error("O Asaas não retornou uma URL válida para o checkout.");
       error.status = 502;
       throw error;
     }
@@ -298,6 +364,16 @@ const handlers = {
       SET asaas_checkout_id = ${checkout.id}
       WHERE id = ${user.id}
     `;
+
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "subscription.checkout_created",
+      entityName: "User",
+      entityId: user.id,
+      message: "Checkout premium criado no Asaas.",
+      metadata: { checkoutId: checkout.id, customerId },
+    });
 
     return sendJson(res, 200, {
       success: true,
@@ -314,6 +390,18 @@ const handlers = {
     const user = await requireAuth(req);
     const syncedUser = await syncPremiumByAsaasCustomer(user.asaas_customer_id);
 
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: syncedUser ? "subscription.sync_activated" : "subscription.sync_checked",
+      entityName: "User",
+      entityId: user.id,
+      message: syncedUser
+        ? "Status premium sincronizado e acesso ativado."
+        : "Status premium verificado sem nova ativação.",
+      metadata: { asaasCustomerId: user.asaas_customer_id || null },
+    });
+
     return sendJson(res, 200, {
       success: true,
       user: syncedUser ? sanitizeUser(syncedUser) : sanitizeUser(user),
@@ -328,6 +416,18 @@ const handlers = {
 
     const user = await requireAuth(req);
     const trialUser = await activateTrialByAsaasCustomer(user.asaas_customer_id);
+
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: trialUser ? "subscription.trial_activated" : "subscription.trial_checked",
+      entityName: "User",
+      entityId: user.id,
+      message: trialUser
+        ? "Período de teste grátis ativado com sucesso."
+        : "Tentativa de ativação de teste sem mudança de status.",
+      metadata: { asaasCustomerId: user.asaas_customer_id || null },
+    });
 
     return sendJson(res, 200, {
       success: true,
@@ -350,6 +450,14 @@ const handlers = {
 
     const token = await issueEmailVerificationToken(user.id);
     await sendVerificationEmail(req, user, token);
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.verification_resent",
+      entityName: "User",
+      entityId: user.id,
+      message: "Email de verificação reenviado.",
+    });
     return sendJson(res, 200, { success: true });
   },
 
@@ -360,6 +468,14 @@ const handlers = {
 
     const body = await parseJsonBody(req);
     const user = await verifyEmailToken(body.token || "");
+    await logAuditEvent({
+      req,
+      userId: user.id,
+      eventType: "auth.email_verified",
+      entityName: "User",
+      entityId: user.id,
+      message: "Conta verificada por email.",
+    });
     return sendJson(res, 200, { success: true, user: sanitizeUser(user) });
   },
 };

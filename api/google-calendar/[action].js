@@ -4,6 +4,7 @@ import {
   completeGoogleCalendarConnection,
   disconnectGoogleCalendar,
 } from "../_lib/google-calendar.js";
+import { logAuditEvent } from "../_lib/audit.js";
 import { ensureSchema, getSql } from "../_lib/db.js";
 import { handleError, sendJson } from "../_lib/utils.js";
 
@@ -33,6 +34,14 @@ export default async function handler(req, res) {
 
       const user = await requireAuth(req);
       const url = await buildGoogleCalendarConnectUrl(req, user);
+      await logAuditEvent({
+        req,
+        userId: user.id,
+        eventType: "calendar.connect_started",
+        entityName: "User",
+        entityId: user.id,
+        message: "Usuário iniciou a conexão com Google Agenda.",
+      });
       return sendJson(res, 200, { url });
     }
 
@@ -46,7 +55,15 @@ export default async function handler(req, res) {
         return redirectToApp(res, `${getAppUrl(req)}/#/lembretes?calendar=error`);
       }
 
-      await completeGoogleCalendarConnection(req, String(code), String(state));
+      const connectedUserId = await completeGoogleCalendarConnection(req, String(code), String(state));
+      await logAuditEvent({
+        req,
+        userId: connectedUserId || null,
+        eventType: "calendar.connected",
+        entityName: "User",
+        entityId: connectedUserId || null,
+        message: "Google Agenda conectada com sucesso.",
+      });
       return redirectToApp(res, `${getAppUrl(req)}/#/lembretes?calendar=connected`);
     }
 
@@ -57,6 +74,14 @@ export default async function handler(req, res) {
 
       const user = await requireAuth(req);
       await disconnectGoogleCalendar(user.id);
+      await logAuditEvent({
+        req,
+        userId: user.id,
+        eventType: "calendar.disconnected",
+        entityName: "User",
+        entityId: user.id,
+        message: "Google Agenda desconectada pelo usuário.",
+      });
       await ensureSchema();
       const sql = getSql();
       const rows = await sql`
@@ -71,6 +96,13 @@ export default async function handler(req, res) {
     return sendJson(res, 404, { message: "Not found" });
   } catch (error) {
     if (req.query.action === "callback") {
+      await logAuditEvent({
+        req,
+        eventType: "calendar.callback_failed",
+        level: "error",
+        message: error.message || "Falha ao concluir conexão com Google Agenda.",
+        metadata: { action: req.query.action },
+      }).catch(() => {});
       return redirectToApp(res, `${getAppUrl(req)}/#/lembretes?calendar=error`);
     }
 

@@ -76,6 +76,12 @@ const createEntityApi = (entityName) => ({
 
 export const base44 = {
   entities: Object.fromEntries(ENTITY_NAMES.map((name) => [name, createEntityApi(name)])),
+  admin: {
+    async logs(limit = 50) {
+      const query = new URLSearchParams({ limit: String(limit) });
+      return request(`/api/admin/logs?${query.toString()}`);
+    },
+  },
   support: {
     async sendContact(payload) {
       return request("/api/contact", {

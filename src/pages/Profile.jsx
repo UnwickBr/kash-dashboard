@@ -170,9 +170,7 @@ export default function Profile() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-3xl font-bold tracking-tight">Meu perfil</h1>
-        <p className="mt-2 text-muted-foreground">
-          Atualize seus dados pessoais e mantenha sua conta sempre em dia.
-        </p>
+        <p className="mt-2 text-muted-foreground">Atualize seus dados pessoais e mantenha sua conta sempre em dia.</p>
       </motion.div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -183,9 +181,7 @@ export default function Profile() {
                 <UserRound className="h-5 w-5 text-primary" />
                 Dados pessoais
               </CardTitle>
-              <CardDescription>
-                O email da conta fica travado após o cadastro para manter a segurança do acesso.
-              </CardDescription>
+              <CardDescription>O email da conta fica travado após o cadastro para manter a segurança do acesso.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -228,9 +224,7 @@ export default function Profile() {
                 <LockKeyhole className="h-5 w-5 text-primary" />
                 Segurança da conta
               </CardTitle>
-              <CardDescription>
-                Troque sua senha sempre que quiser reforçar a segurança da conta.
-              </CardDescription>
+              <CardDescription>Troque sua senha sempre que quiser reforçar a segurança da conta.</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handlePasswordSubmit} className="space-y-4">

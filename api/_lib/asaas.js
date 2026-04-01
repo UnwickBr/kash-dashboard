@@ -15,7 +15,7 @@ const inferCheckoutHost = (baseUrl) => {
 const getAsaasConfig = () => {
   const apiKey = process.env.ASAAS_API_KEY;
   if (!apiKey) {
-    const error = new Error("ASAAS_API_KEY nao configurada.");
+    const error = new Error("ASAAS_API_KEY não configurada.");
     error.status = 500;
     throw error;
   }
@@ -60,7 +60,7 @@ export const buildCheckoutUrl = (checkoutId) => {
 export const assertAsaasWebhookToken = (req) => {
   const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
   if (!expectedToken) {
-    const error = new Error("ASAAS_WEBHOOK_TOKEN nao configurado.");
+    const error = new Error("ASAAS_WEBHOOK_TOKEN não configurado.");
     error.status = 500;
     throw error;
   }

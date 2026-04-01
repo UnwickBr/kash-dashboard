@@ -18,10 +18,10 @@ export default function PremiumFeatureGate({ featureName, children }) {
         </div>
         <h1 className="text-3xl font-bold tracking-tight">Recurso Premium</h1>
         <p className="mt-3 text-base text-muted-foreground">
-          A area de {featureName} esta disponivel apenas para usuarios Premium.
+          A área de {featureName} está disponível apenas para usuários Premium.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          No plano gratuito, o acesso fica liberado somente para o Painel e para as Transacoes.
+          No plano gratuito, o acesso fica liberado somente para o Painel e para as Transações.
         </p>
 
         <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
