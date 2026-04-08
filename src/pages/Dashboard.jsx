@@ -129,7 +129,8 @@ export default function Dashboard() {
 
       if (transaction.type === "receita") {
         map[key].receita += transaction.amount;
-      } else {
+      }
+      if (transaction.type === "despesa") {
         map[key].despesa += transaction.amount;
       }
     });

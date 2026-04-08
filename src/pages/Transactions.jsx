@@ -131,6 +131,7 @@ export default function Transactions() {
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="receita">Receitas</SelectItem>
             <SelectItem value="despesa">Despesas</SelectItem>
+            <SelectItem value="cofrinho">Cofrinho</SelectItem>
           </SelectContent>
         </Select>
 

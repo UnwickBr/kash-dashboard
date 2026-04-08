@@ -1,10 +1,10 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, PiggyBank } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseStoredDate } from "@/lib/date";
 
 const categoryIcons = {
-  Alimentação: "🍽️",
+  "Alimentação": "🍽️",
   Transporte: "🚗",
   Moradia: "🏠",
   Saúde: "💊",
@@ -21,7 +21,8 @@ const categoryIcons = {
 
 export default function TransactionItem({ transaction }) {
   const isIncome = transaction.type === "receita";
-  const icon = categoryIcons[transaction.category] || "📦";
+  const isSavings = transaction.type === "cofrinho";
+  const icon = categoryIcons[transaction.category] || (isSavings ? "🐷" : "📦");
 
   return (
     <div className="-mx-1 flex items-center gap-4 rounded-lg border-b border-border/50 px-3 py-3.5 transition-colors last:border-0 hover:bg-secondary/30">
@@ -36,13 +37,15 @@ export default function TransactionItem({ transaction }) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <div className="text-right">
-          <p className={`text-sm font-bold tabular-nums ${isIncome ? "text-primary" : "text-destructive"}`}>
-            {isIncome ? "+" : "-"} R$ {Math.abs(transaction.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          <p className={`text-sm font-bold tabular-nums ${isIncome ? "text-primary" : isSavings ? "text-foreground" : "text-destructive"}`}>
+            {isIncome ? "+" : isSavings ? "" : "-"} R$ {Math.abs(transaction.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className={`rounded-full p-1 ${isIncome ? "bg-primary/10" : "bg-destructive/10"}`}>
+        <div className={`rounded-full p-1 ${isIncome ? "bg-primary/10" : isSavings ? "bg-secondary" : "bg-destructive/10"}`}>
           {isIncome ? (
             <ArrowUpRight className="h-3.5 w-3.5 text-primary" />
+          ) : isSavings ? (
+            <PiggyBank className="h-3.5 w-3.5 text-foreground" />
           ) : (
             <ArrowDownRight className="h-3.5 w-3.5 text-destructive" />
           )}

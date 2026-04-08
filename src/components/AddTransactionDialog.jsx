@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { addMonths, format, isValid, parse } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Plus } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
 import { parseStoredDate } from "@/lib/date";
+import { useAuth } from "@/lib/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const categories = {
   despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"],
@@ -23,8 +25,11 @@ const formatDateInput = (value) => {
 };
 
 export default function AddTransactionDialog({ onSuccess }) {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [savings, setSavings] = useState([]);
   const today = new Date();
   const initialDate = format(today, "yyyy-MM-dd");
   const initialDateLabel = format(today, "dd/MM/yyyy");
@@ -38,6 +43,28 @@ export default function AddTransactionDialog({ onSuccess }) {
     installments: "1",
   });
   const [dateInput, setDateInput] = useState(initialDateLabel);
+
+  useEffect(() => {
+    const loadSavings = async () => {
+      if (!currentUser?.email) {
+        setSavings([]);
+        return;
+      }
+
+      try {
+        const data = await base44.entities.Savings.filter({ created_by: currentUser.email }, "-created_date", 100);
+        setSavings(data);
+      } catch {
+        setSavings([]);
+      }
+    };
+
+    loadSavings();
+  }, [currentUser]);
+
+  const cofrinhoCategories = useMemo(() => savings.map((item) => item.name).filter(Boolean), [savings]);
+  const currentCategories = form.type === "cofrinho" ? cofrinhoCategories : categories[form.type];
+  const hasCofrinhoOptions = cofrinhoCategories.length > 0;
 
   const handleDateChange = (value) => {
     const maskedValue = formatDateInput(value);
@@ -89,7 +116,7 @@ export default function AddTransactionDialog({ onSuccess }) {
 
     try {
       const totalAmount = parseFloat(form.amount);
-      const installments = parseInt(form.installments, 10) || 1;
+      const installments = form.type === "despesa" ? parseInt(form.installments, 10) || 1 : 1;
 
       if (installments > 1) {
         const installmentAmount = totalAmount / installments;
@@ -184,31 +211,47 @@ export default function AddTransactionDialog({ onSuccess }) {
 
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</Label>
-              <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value, category: "" }))}>
+              <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value, category: "", installments: "1" }))}>
                 <SelectTrigger className="mt-1.5 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="despesa">Despesa</SelectItem>
                   <SelectItem value="receita">Receita</SelectItem>
+                  <SelectItem value="cofrinho">Cofrinho</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
-              <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value }))}>
-                <SelectTrigger className="mt-1.5 rounded-xl">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories[form.type].map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {form.type === "cofrinho" && !hasCofrinhoOptions ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-1.5 h-11 w-full rounded-xl text-lg"
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/poupanca");
+                  }}
+                  aria-label="Criar poupança"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value }))}>
+                  <SelectTrigger className="mt-1.5 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {form.type === "despesa" && (

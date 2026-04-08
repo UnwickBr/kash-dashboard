@@ -14,7 +14,8 @@
       "type": "string",
       "enum": [
         "receita",
-        "despesa"
+        "despesa",
+        "cofrinho"
       ],
       "title": "Tipo"
     },
