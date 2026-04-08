@@ -10,7 +10,6 @@ import { base44 } from "@/api/base44Client";
 import { toast } from "@/components/ui/use-toast";
 import { parseStoredDate } from "@/lib/date";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 const categories = {
   despesa: ["Alimentação", "Transporte", "Moradia", "Saúde", "Educação", "Lazer", "Pet", "Assinaturas", "Cartão de Crédito", "Outros"],
@@ -26,10 +25,11 @@ const formatDateInput = (value) => {
 
 export default function AddTransactionDialog({ onSuccess }) {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savings, setSavings] = useState([]);
+  const [showSavingsInput, setShowSavingsInput] = useState(false);
+  const [newSavingsName, setNewSavingsName] = useState("");
   const today = new Date();
   const initialDate = format(today, "yyyy-MM-dd");
   const initialDateLabel = format(today, "dd/MM/yyyy");
@@ -44,27 +44,29 @@ export default function AddTransactionDialog({ onSuccess }) {
   });
   const [dateInput, setDateInput] = useState(initialDateLabel);
 
+  const loadSavings = async () => {
+    if (!currentUser?.email) {
+      setSavings([]);
+      return [];
+    }
+
+    try {
+      const data = await base44.entities.Savings.filter({ created_by: currentUser.email }, "-created_date", 100);
+      setSavings(data);
+      return data;
+    } catch {
+      setSavings([]);
+      return [];
+    }
+  };
+
   useEffect(() => {
-    const loadSavings = async () => {
-      if (!currentUser?.email) {
-        setSavings([]);
-        return;
-      }
-
-      try {
-        const data = await base44.entities.Savings.filter({ created_by: currentUser.email }, "-created_date", 100);
-        setSavings(data);
-      } catch {
-        setSavings([]);
-      }
-    };
-
     loadSavings();
   }, [currentUser]);
 
   const cofrinhoCategories = useMemo(() => savings.map((item) => item.name).filter(Boolean), [savings]);
   const currentCategories = form.type === "cofrinho" ? cofrinhoCategories : categories[form.type];
-  const hasCofrinhoOptions = cofrinhoCategories.length > 0;
+  const isCreatingSavings = form.type === "cofrinho" && showSavingsInput;
 
   const handleDateChange = (value) => {
     const maskedValue = formatDateInput(value);
@@ -97,6 +99,39 @@ export default function AddTransactionDialog({ onSuccess }) {
       installments: "1",
     });
     setDateInput(format(nextToday, "dd/MM/yyyy"));
+    setShowSavingsInput(false);
+    setNewSavingsName("");
+  };
+
+  const syncSavingsBalance = async (amount) => {
+    const savingsName = newSavingsName.trim() || form.category;
+
+    if (!savingsName) {
+      throw new Error("Selecione ou crie um cofrinho.");
+    }
+
+    const existingSavings = savings.find((item) => item.name === savingsName);
+
+    if (existingSavings) {
+      await base44.entities.Savings.update(existingSavings.id, {
+        ...existingSavings,
+        amount: parseFloat((Number(existingSavings.amount || 0) + amount).toFixed(2)),
+      });
+
+      return savingsName;
+    }
+
+    await base44.entities.Savings.create({
+      name: savingsName,
+      amount,
+      goal_amount: null,
+      monthly_deposit: null,
+      description: form.notes || "",
+      icon: "🐷",
+    });
+
+    await loadSavings();
+    return savingsName;
   };
 
   const handleSubmit = async (event) => {
@@ -117,6 +152,11 @@ export default function AddTransactionDialog({ onSuccess }) {
     try {
       const totalAmount = parseFloat(form.amount);
       const installments = form.type === "despesa" ? parseInt(form.installments, 10) || 1 : 1;
+      let category = form.category;
+
+      if (form.type === "cofrinho") {
+        category = await syncSavingsBalance(totalAmount);
+      }
 
       if (installments > 1) {
         const installmentAmount = totalAmount / installments;
@@ -128,6 +168,7 @@ export default function AddTransactionDialog({ onSuccess }) {
           creates.push(
             base44.entities.Transaction.create({
               ...form,
+              category,
               amount: parseFloat(installmentAmount.toFixed(2)),
               date: format(installmentDate, "yyyy-MM-dd"),
               description: `${form.description} (${index + 1}/${installments})`,
@@ -139,6 +180,7 @@ export default function AddTransactionDialog({ onSuccess }) {
       } else {
         await base44.entities.Transaction.create({
           ...form,
+          category,
           amount: totalAmount,
         });
       }
@@ -158,7 +200,15 @@ export default function AddTransactionDialog({ onSuccess }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          resetForm();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button className="gap-2 rounded-xl shadow-sm">
           <Plus className="h-4 w-4" />
@@ -173,7 +223,7 @@ export default function AddTransactionDialog({ onSuccess }) {
         <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Descrição</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Descrição</Label>
               <Input
                 className="mt-1.5 rounded-xl"
                 placeholder="Ex: Supermercado"
@@ -184,7 +234,7 @@ export default function AddTransactionDialog({ onSuccess }) {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Valor (R$)</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Valor (R$)</Label>
               <Input
                 className="mt-1.5 rounded-xl"
                 type="number"
@@ -198,7 +248,7 @@ export default function AddTransactionDialog({ onSuccess }) {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Data</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data</Label>
               <Input
                 className="mt-1.5 rounded-xl"
                 inputMode="numeric"
@@ -210,8 +260,15 @@ export default function AddTransactionDialog({ onSuccess }) {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tipo</Label>
-              <Select value={form.type} onValueChange={(value) => setForm((current) => ({ ...current, type: value, category: "", installments: "1" }))}>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tipo</Label>
+              <Select
+                value={form.type}
+                onValueChange={(value) => {
+                  setForm((current) => ({ ...current, type: value, category: "", installments: "1" }));
+                  setShowSavingsInput(false);
+                  setNewSavingsName("");
+                }}
+              >
                 <SelectTrigger className="mt-1.5 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -224,20 +281,55 @@ export default function AddTransactionDialog({ onSuccess }) {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Categoria</Label>
-              {form.type === "cofrinho" && !hasCofrinhoOptions ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-1.5 h-11 w-full rounded-xl text-lg"
-                  onClick={() => {
-                    setOpen(false);
-                    navigate("/poupanca");
-                  }}
-                  aria-label="Criar poupança"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Categoria</Label>
+              {form.type === "cofrinho" ? (
+                <div className="mt-1.5 space-y-2">
+                  <div className="flex gap-2">
+                    <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value }))}>
+                      <SelectTrigger className="flex-1 rounded-xl">
+                        <SelectValue placeholder={cofrinhoCategories.length ? "Selecione" : "Crie um cofrinho"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cofrinhoCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant={showSavingsInput ? "default" : "outline"}
+                      size="icon"
+                      className="h-11 w-11 rounded-xl"
+                      onClick={() => {
+                        setShowSavingsInput((current) => {
+                          const nextValue = !current;
+                          if (!nextValue) {
+                            setNewSavingsName("");
+                            setForm((currentForm) => ({ ...currentForm, category: "" }));
+                          }
+                          return nextValue;
+                        });
+                      }}
+                      aria-label="Criar novo cofrinho"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {showSavingsInput && (
+                    <Input
+                      className="rounded-xl"
+                      placeholder="Nome do novo cofrinho"
+                      value={newSavingsName}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setNewSavingsName(value);
+                        setForm((current) => ({ ...current, category: value }));
+                      }}
+                    />
+                  )}
+                </div>
               ) : (
                 <Select value={form.category} onValueChange={(value) => setForm((current) => ({ ...current, category: value }))}>
                   <SelectTrigger className="mt-1.5 rounded-xl">
@@ -256,7 +348,7 @@ export default function AddTransactionDialog({ onSuccess }) {
 
             {form.type === "despesa" && (
               <div>
-                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Parcelado em</Label>
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Parcelado em</Label>
                 <Select value={form.installments} onValueChange={(value) => setForm((current) => ({ ...current, installments: value }))}>
                   <SelectTrigger className="mt-1.5 rounded-xl">
                     <SelectValue />
@@ -271,7 +363,7 @@ export default function AddTransactionDialog({ onSuccess }) {
                 </Select>
                 {parseInt(form.installments, 10) > 1 && form.amount && (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {form.installments}x de R${" "}
+                    {form.installments}x de R$ {" "}
                     {(parseFloat(form.amount) / parseInt(form.installments, 10)).toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                     })}
@@ -281,7 +373,7 @@ export default function AddTransactionDialog({ onSuccess }) {
             )}
 
             <div className="col-span-2">
-              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Observações</Label>
+              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Observações</Label>
               <Input
                 className="mt-1.5 rounded-xl"
                 placeholder="Opcional"
@@ -294,7 +386,13 @@ export default function AddTransactionDialog({ onSuccess }) {
           <Button
             type="submit"
             className="w-full rounded-xl"
-            disabled={loading || !form.description || !form.amount || !form.category || dateInput.length !== 10}
+            disabled={
+              loading ||
+              !form.description ||
+              !form.amount ||
+              !(isCreatingSavings ? newSavingsName.trim() : form.category) ||
+              dateInput.length !== 10
+            }
           >
             {loading ? "Salvando..." : "Adicionar Transação"}
           </Button>

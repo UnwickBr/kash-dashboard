@@ -83,7 +83,9 @@ export default function Dashboard() {
   }, [filteredTransactions]);
 
   const spendingByCategory = useMemo(() => {
-    const expenses = filteredTransactions.filter((transaction) => transaction.type === "despesa");
+    const expenses = filteredTransactions.filter(
+      (transaction) => transaction.type === "despesa" || transaction.type === "cofrinho"
+    );
     const categorySet = new Set();
     const dayMap = new Map();
 
@@ -91,15 +93,16 @@ export default function Dashboard() {
       const date = parseStoredDate(transaction.date);
       const key = format(date, "yyyy-MM-dd");
       const label = format(date, "dd/MM", { locale: ptBR });
+      const categoryLabel = transaction.type === "cofrinho" ? "Guardado" : transaction.category;
 
-      categorySet.add(transaction.category);
+      categorySet.add(categoryLabel);
 
       if (!dayMap.has(key)) {
         dayMap.set(key, { key, label, sortKey: date.getTime() });
       }
 
       const entry = dayMap.get(key);
-      entry[transaction.category] = (entry[transaction.category] || 0) + transaction.amount;
+      entry[categoryLabel] = (entry[categoryLabel] || 0) + transaction.amount;
     });
 
     const categories = Array.from(categorySet);
