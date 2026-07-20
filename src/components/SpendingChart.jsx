@@ -38,27 +38,47 @@ export default function SpendingChart({ data, categories = [] }) {
   }
 
   return (
-    <div className="h-64 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(100, 15%, 90%)" />
-          <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(160, 10%, 45%)" />
-          <YAxis tick={{ fontSize: 11 }} stroke="hsl(160, 10%, 45%)" />
-          <Tooltip content={<CustomTooltip />} />
-          {categories.map((category, index) => (
-            <Line
-              key={category}
-              type="monotone"
-              dataKey={category}
-              name={category}
-              stroke={COLORS[index % COLORS.length]}
-              strokeWidth={3}
-              dot={{ r: 3, fill: COLORS[index % COLORS.length] }}
-              activeDot={{ r: 5 }}
+    <div className="space-y-3">
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              stroke="hsl(var(--border))"
             />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+            <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} stroke="hsl(var(--border))" />
+            <Tooltip content={<CustomTooltip />} />
+            {categories.map((category, index) => (
+              <Line
+                key={category}
+                type="monotone"
+                dataKey={category}
+                name={category}
+                stroke={COLORS[index % COLORS.length]}
+                strokeWidth={3}
+                dot={{ r: 3, fill: COLORS[index % COLORS.length] }}
+                activeDot={{ r: 5 }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        {categories.map((category, index) => (
+          <div
+            key={category}
+            className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-secondary/50 px-2.5 py-1.5"
+          >
+            <div
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+            />
+            <span className="text-xs font-medium text-foreground">{category}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
