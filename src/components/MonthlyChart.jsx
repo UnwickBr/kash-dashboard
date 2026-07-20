@@ -47,8 +47,8 @@ export default function MonthlyChart({ data }) {
   const pieData = rawPieData.map((item) => ({ ...item, percent: (item.value / total) * 100 }));
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4">
-      <div className="w-56 h-56">
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      <div className="w-56 h-56 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -70,11 +70,14 @@ export default function MonthlyChart({ data }) {
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+      <div className="flex flex-wrap justify-center gap-2">
         {pieData.map((item, index) => (
-          <div key={item.name} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary/50">
+          <div
+            key={item.name}
+            className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-secondary/50 px-2.5 py-1.5"
+          >
             <div
-              className="h-2.5 w-2.5 rounded-full"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
             <span className="text-xs font-medium text-foreground">
