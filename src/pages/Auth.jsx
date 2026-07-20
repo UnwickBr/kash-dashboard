@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import kashLogo from "@/assets/kash-logo.png";
 
 const loginInitialState = { email: "", password: "" };
 const registerInitialState = { fullName: "", email: "", birthDate: "", password: "", confirmPassword: "" };
@@ -223,10 +224,11 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_35%),linear-gradient(180deg,_hsl(var(--background)),_hsl(213_30%_96%))] px-4 py-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_35%),linear-gradient(180deg,_hsl(var(--background)),_hsl(var(--background-soft)))] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center">
         <div className="w-full">
-          <div className="mb-4 flex justify-end">
+          <div className="mb-4 flex items-center justify-between">
+            <img src={kashLogo} alt="Kash Dashboard" className="h-auto w-[132px] max-w-full object-contain" />
             <button
               type="button"
               onClick={() => setDark((current) => !current)}
@@ -241,7 +243,7 @@ export default function Auth() {
             <motion.section
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-[2rem] border border-border/70 bg-card/80 p-8 shadow-xl backdrop-blur lg:p-10"
+              className="order-2 rounded-[2rem] border border-border/70 bg-card/80 p-8 shadow-xl backdrop-blur lg:order-1 lg:p-10"
             >
               <div className="max-w-xl space-y-6">
                 <div className="inline-flex items-center gap-3 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
@@ -280,7 +282,12 @@ export default function Auth() {
               </div>
             </motion.section>
 
-            <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <motion.section
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="order-1 lg:order-2"
+            >
               <Card className="rounded-[2rem] border-border/70 shadow-xl">
                 <CardHeader className="space-y-3">
                   <CardTitle className="text-2xl font-bold">Entrar ou criar conta</CardTitle>

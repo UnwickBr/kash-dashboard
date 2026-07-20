@@ -8,6 +8,7 @@
   :root {
     --font-inter: 'Inter', sans-serif;
     --background: 100 20% 98%;
+    --background-soft: 213 30% 96%;
     --foreground: 160 30% 8%;
     --card: 0 0% 100%;
     --card-foreground: 160 30% 8%;
@@ -44,6 +45,7 @@
 
   .dark {
     --background: 160 20% 5%;
+    --background-soft: 213 20% 10%;
     --foreground: 100 15% 95%;
     --card: 160 15% 8%;
     --card-foreground: 100 15% 95%;
