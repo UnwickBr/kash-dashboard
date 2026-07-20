@@ -351,7 +351,7 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 pt-16 lg:ml-72 lg:pt-0">
+      <main className="flex-1 pt-[calc(5.5rem+env(safe-area-inset-top))] lg:ml-72 lg:pt-0">
         <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
           <Outlet />
         </div>
