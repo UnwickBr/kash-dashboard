@@ -4,12 +4,14 @@ const COLORS = ["hsl(160, 84%, 28%)", "hsl(0, 72%, 55%)"];
 
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
+    const { name, value, payload: item } = payload[0];
     return (
       <div className="bg-card border border-border rounded-xl px-3 py-2 shadow-lg">
-        <p className="text-xs font-semibold text-foreground">{payload[0].name}</p>
+        <p className="text-xs font-semibold text-foreground">{name}</p>
         <p className="text-xs text-muted-foreground">
-          R$ {payload[0].value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          R$ {value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
         </p>
+        <p className="text-xs font-semibold text-foreground">{item.percent.toFixed(0)}%</p>
       </div>
     );
   }
@@ -28,18 +30,21 @@ export default function MonthlyChart({ data }) {
 
   const totalReceita = data.reduce((sum, item) => sum + (item.receita || 0), 0);
   const totalDespesa = data.reduce((sum, item) => sum + (item.despesa || 0), 0);
-  const pieData = [
+  const rawPieData = [
     { name: "Receitas", value: totalReceita },
     { name: "Despesas", value: totalDespesa },
   ].filter((item) => item.value > 0);
 
-  if (pieData.length === 0) {
+  if (rawPieData.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
         Sem dados para exibir
       </div>
     );
   }
+
+  const total = rawPieData.reduce((sum, item) => sum + item.value, 0);
+  const pieData = rawPieData.map((item) => ({ ...item, percent: (item.value / total) * 100 }));
 
   return (
     <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -72,7 +77,9 @@ export default function MonthlyChart({ data }) {
               className="h-2.5 w-2.5 rounded-full"
               style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
-            <span className="text-xs font-medium text-foreground">{item.name}</span>
+            <span className="text-xs font-medium text-foreground">
+              {item.name} · {item.percent.toFixed(0)}%
+            </span>
           </div>
         ))}
       </div>
